@@ -1,0 +1,7 @@
+streamlit
+pandas
+BytesIO
+streamlit_gsheets
+os
+fpdf
+io
