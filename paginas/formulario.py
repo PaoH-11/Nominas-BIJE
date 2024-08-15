@@ -1,7 +1,20 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-
+st.markdown(
+    """
+    <style>
+    /* Estilo para el fondo de la aplicación con degradado */
+    .stApp {
+        background-image: radial-gradient(circle at 34.8% 34.8%, #bad4ee 0, #97bee6 25%, #70a8dd 50%, #4192d4 75%, #007dcc 100%);
+        height: 100vh;
+        padding: 0;
+    }
+    
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 SALARIO_BASE = [265.6,  #INTERIOR DEMOSTRADOR UN EVENTO     [0]
                 455,    #INTERIOR DEMOSTRADOR DOS EVENTOS   [1]
                 374.89, #FRONTERA DEMOSTRADOR UN EVENTO     [2]
@@ -42,7 +55,7 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
         elif zona == 'FRONTERA':
             if total_dias_t2 >= 1:
                 return SALARIO_BASE[2], SALARIO_BASE[3], 0.068, 0.068, 0.1, 0.1, False, True
-            else:
+            elif total_dias_t2 == 0:
                 return SALARIO_BASE[2], SALARIO_BASE[3], 0.068, 0.068, 0.1, 0.1, False, False       
         elif zona == 'ESPECIAL':
             return SALARIO_BASE[4], SALARIO_BASE[5], 0.1, 0.1, 0.1, 0.1, True, True
@@ -83,6 +96,9 @@ def app():
     df_aux2= conn.read(worksheet="Nómina General", usecols=list(range(40)), ttl=5)
     df_aux2 = df_aux2.dropna(how="all")
 
+    df_aux3= conn.read(worksheet="Nómina Doble Turno", usecols=list(range(40)), ttl=5)
+    df_aux3 = df_aux3.dropna(how="all")
+
     NOMBRES = df_aux.iloc[:, 0].dropna().tolist()
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
     BODEGA = df_aux.iloc[:, 2].dropna().tolist()
@@ -92,6 +108,7 @@ def app():
     HORARIO = ["9 A 4", "2 A 9", "COORDINACIÓN"]
     SEGURO = ["FINIQUITO", "NOMINA"]
     NOMINA = ["FINIQUITO", "CORTE"]
+
 
     with st.form(key="empleado_form"):
         
@@ -109,17 +126,16 @@ def app():
             nombre_empleado = st.selectbox("Nombre completo", options=NOMBRES)
             inicio = st.date_input(label="Día inicio*")
             alta_seguro = st.selectbox("Alta del seguro social", options=SEGURO)
-            dia_festivos_c = st.checkbox(label="Día festivo")
-            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
-            horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0)      
-            
+            st.write("Segundo evento")
+            total_dias_t2 = st.number_input(label="Días trabajados con doble turno", min_value=0, max_value=21)
+            dias_finiquito2 = st.number_input(label="Días Finiquito 2 Turnos", min_value=0, max_value=21)     
         with c3:
             zona = st.selectbox("Zona*", options=ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
             fin = st.date_input(label="Día fin*")            
-            st.write("Segundo evento")
-            total_dias_t2 = st.number_input(label="Días trabajados con doble turno", min_value=0, max_value=21)
-            dias_finiquito2 = st.number_input(label="Días Finiquito 2 Turnos", min_value=0, max_value=21)
+            dia_festivos_c = st.checkbox(label="Día festivo")
+            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
+            horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0)  
             cant_eventos = st.number_input("Bonos de coordinador", min_value=0, max_value=2)
 
         st.markdown("**Requerido*")
@@ -137,7 +153,7 @@ def app():
             
             if total_dias_t2 >= 1:
                 aguinaldo2, vacaciones2, prima_vacacional2, prima_dominical2, prem_asis2, prem_punt2, sueldo_integrado2, finiquito2 = calcular_finiquito(salario_base_dos, dias_finiquito2, prem_punt_pct2, prem_asis_pct2, incluir_prima_dominical2)
-            else:
+            elif total_dias_t2 == 0:
                 aguinaldo2 = vacaciones2 = prima_vacacional2 = prima_dominical2 = prem_asis2 = prem_punt2 = sueldo_integrado2 = finiquito2 = 0
 
             he = horas_extra * 50
@@ -145,7 +161,7 @@ def app():
             sueldo_uno = round((salario_base * total_dias), 2)
             sueldo_dos = round(salario_base_dos * total_dias_t2, 2)
             sueldo_cotizacion1 = round(salario_base + prima_dominical1 + prem_asis + prem_punt, 2)
-            sueldo_cotizacion2 = round(salario_base_dos + prima_dominical2 + prem_asis2 + prem_punt2, 2) if total_dias_t2 > 0 else 0
+            sueldo_cotizacion2 = round(salario_base_dos + prima_dominical2 + prem_asis2 + prem_punt2, 2) if total_dias_t2 >= 1 else 0
 
             if dia_festivos_c:  
                 dia_festivo = round(dia_festivos * 2, 2)              
@@ -183,8 +199,7 @@ def app():
                         "NOMBRE COMPLETO": nombre_empleado,
                         "STATUS DE NOMINA": estatus_nomina,
                         "ALTA DEL SEGURO SOCIAL": alta_seguro,
-                        "INICIO PERIODO": inicio.strftime("%Y-%m-%d"),
-                        "FIN PERIODO": fin.strftime("%Y-%m-%d"),
+                        "PERIODO":  f"{inicio.strftime('%Y-%m-%d')} al {fin.strftime('%Y-%m-%d')}",                        
                         "HORARIO": horario,  
                         "DÍAS FESTIVOS": dia_festivo,                      
                         "BONO": he,
@@ -225,15 +240,15 @@ def app():
 
             conn.update(worksheet="Nómina", data=updated_df)
 
-            empleado_data = pd.DataFrame(
+            nomina_uno_data = pd.DataFrame(
                 [
                     {
                         "BODEGA": bodega,
                         "EVENTO": evento,
                         "PERIODO TRABAJADO": f"{inicio.strftime('%Y-%m-%d')} al {fin.strftime('%Y-%m-%d')}",
-                        "NOMBRE COMPLETO": nombre_empleado,
+                        "NOMBRE COMPLETO ": nombre_empleado,
                         "ESTATUS DE NÓMINA": estatus_nomina,
-                        "ALTA DEL SEGURO SOCIAL": alta_seguro,                        
+                        "ALTA DEL SEGURO SOCIAL ": alta_seguro,                        
                         "HORARIO": horario,  
                         "HORAS EXTRAS AUTORIZADAS": horas_extra,
                         "TOTAL DE DÍAS TRABAJADOS": total_dias,
@@ -250,14 +265,42 @@ def app():
                 ]
             )
 
-            updated_df = pd.concat([df_aux2, empleado_data], ignore_index=True)
+            updated_df = pd.concat([df_aux2, nomina_uno_data], ignore_index=True)
 
             conn.update(worksheet="Nómina General", data=updated_df)
+            if total_dias_t2 > 0:
+                nomina_dos_data = pd.DataFrame(
+                    [
+                        {
+                            "BODEGA": bodega,
+                            "EVENTO": evento,
+                            "PERIODO TRABAJADO": f"{inicio.strftime('%Y-%m-%d')} al {fin.strftime('%Y-%m-%d')}",
+                            "NOMBRE COMPLETO": nombre_empleado,
+                            "ESTATUS DE NÓMINA": estatus_nomina,
+                            "ALTA DEL SEGURO SOCIAL": alta_seguro,                        
+                            "HORARIO": horario,  
+                            "HORAS EXTRAS AUTORIZADAS": horas_extra,
+                            "TOTAL DE DÍAS DOBLES TRABAJADOS": total_dias_t2,
+                            "TOTAL SUELDO": total_dos,                    
+                            "TOTAL DE HORAS EXTRAS": he,
+                            "TOTAL CAPACITACION PROPORCIONADA POR PROVEEDOR": 0, 
+                            "BANCO": " ",
+                            "CUENTA": " ",
+                            "TARJETA": " ",
+                            "CLABE INTERBANCARIA": " ",
+                            "RFC": " ",
+                            "OBSERVACIONES": observaciones,                      
+                        }
+                    ]
+                )
 
-            st.success("Calculo agregado satisfactoriamente")
+                updated_df = pd.concat([df_aux3, nomina_dos_data], ignore_index=True)
 
+                conn.update(worksheet="Nómina Doble Turno", data=updated_df)
+
+            st.success(f"Datos de {nombre_empleado} registrados correctamente.")
    
-    st.dataframe(df_aux2)
+    st.dataframe(df)
 
 
 if __name__ == "__main__":

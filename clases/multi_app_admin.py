@@ -69,7 +69,7 @@ class MultiApp:
         app_modules = {
             'Reportes': 'paginas.nominas',
             'Nómina GoogleSheet': 'paginas.formulario',
-            'Nómina Temporal': 'paginas.formulario_prueba',
+            'Nómina Temporal': 'paginas.excel_temporal',
             'Pruebas': 'paginas.pruebas'
 
             

@@ -89,6 +89,11 @@ def app():
             sueldo_dos = round(salario_base_dos * evento['total_dias_t2'], 2)
             he = evento['horas_extra'] * 50
 
+            if evento['dia_festivos_c'] == True:  
+                dia_festivo = round(dia_festivos * 2, 2)              
+                sueldo_uno += dia_festivo
+            else:
+                dia_festivo = 0
             # Inicializar bono de coordinador
             bono_coordinador = 0
 
@@ -105,17 +110,32 @@ def app():
                     bono_coordinador = 500
             else:
                 total_uno = round(sueldo_uno + finiquito, 2)
-
+            
             total_dos = round(sueldo_dos + finiquito2, 2)
             total = round(total_uno + total_dos + he, 2)
 
             resultados.append({
-                'Nombre': evento['nombre'],
-                'Puesto': evento['puesto'],
-                'Zona': evento['zona'],
-                'Evento': evento['nombre_evento'],
-                'Bodega': evento['bodega'],
-                'Días trabajados': evento['dias_trabajados'],
+                'PUESTO': evento['puesto'],
+                'ZONA': evento['zona'],
+                'BODEGA': evento['bodega'],
+                'EVENTO': evento['nombre_evento'],
+                'PERIODO TRABAJADO': f"Del {evento['inicio']} al {evento['fin']}",
+                'NOMBRE COMPLETO': evento['nombre'],
+                'ESTATUS NOMINA': evento['estatus_nomina'],
+                'ALTA SEGURO SOCIAL': evento['alta_seguro'],
+                'HORARIO': evento['horario'],
+                'HORAS EXTRA AUTORIZADAS': evento['horas_extra'],
+                'TOTAL DE DÍAS TRABAJADOS': evento['dias_trabajados'],
+                'TOTAL DE SUELDOS': total_uno,
+                'TOTAL DE HORA EXTRA': he,
+                'TOTAL CAPACITACION': "",
+                'BANCO': "",
+                'CUENTA': "",
+                'TARJETA': "",
+                'CLABE INTERBANCARIA': "",
+                'RFC': "",
+                'OBSERVACIONES': evento['observaciones'],
+                ' ' : "",              
                 'Días finiquito 1 evento': evento['dias_finiquito'],
                 'Días trabajados 2 eventos': evento['total_dias_t2'],
                 'Días finiquito 2 eventos': evento['dias_finiquito2'],
@@ -136,8 +156,8 @@ def app():
                 'Premio puntualidad 2': prem_punt2,
                 'Sueldo integrado 2': sueldo_integrado2,
                 'Finiquito 2': finiquito2,
-                'Horas extra': he,
-                'Sueldo 1': sueldo_uno,
+                'Sueldo 1': total_uno,
+                'Sueldo 2': total_dos,
                 'Total': total
             })
 
@@ -164,8 +184,8 @@ def app():
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            puesto = st.selectbox("Puesto", options=PUESTO)
-            evento = st.selectbox("Evento", options=EVENTOS)
+            puesto = st.selectbox("Puesto*", options=PUESTO)
+            evento = st.selectbox("Evento*", options=EVENTOS)
             observaciones = st.text_input(label="Observaciones")
             estatus_nomina = st.selectbox("Estatus de la nómina", options=NOMINA)
             st.write("Primer evento")
@@ -176,17 +196,16 @@ def app():
             nombre_empleado = st.selectbox("Nombre completo", options=NOMBRES)
             inicio = st.date_input(label="Día inicio*")
             alta_seguro = st.selectbox("Alta del seguro social", options=SEGURO)
-            dia_festivos_c = st.checkbox(label="Día festivo")
-            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
-            horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0)      
-            
+            st.write("Segundo evento")
+            total_dias_t2 = st.number_input(label="Días trabajados con doble turno", min_value=0, max_value=21)
+            dias_finiquito2 = st.number_input(label="Días Finiquito 2 Turnos", min_value=0, max_value=21)     
         with c3:
             zona = st.selectbox("Zona*", options=ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
             fin = st.date_input(label="Día fin*")            
-            st.write("Segundo evento")
-            total_dias_t2 = st.number_input(label="Días trabajados con doble turno", min_value=0, max_value=21)
-            dias_finiquito2 = st.number_input(label="Días Finiquito 2 Turnos", min_value=0, max_value=21)
+            dia_festivos_c = st.checkbox(label="Día festivo")
+            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
+            horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0)  
             cant_eventos = st.number_input("Bonos de coordinador", min_value=0, max_value=2)
 
         st.markdown("**Requerido*")
@@ -211,7 +230,7 @@ def app():
             'zona': zona,
             'horario': horario,
             'fin': fin,
-            
+            'dia_festivos_c': dia_festivos_c,
             'total_dias_t2': total_dias_t2,
             'dias_finiquito2': dias_finiquito2,
             'observaciones': observaciones,
@@ -243,3 +262,5 @@ def app():
 # Llamada a la función app para ejecutar la aplicación
 if __name__ == "__main__":
     app()
+
+    
