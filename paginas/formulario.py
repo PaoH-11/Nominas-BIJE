@@ -80,6 +80,9 @@ def app():
     df_aux = conn.read(worksheet="Datos", usecols=list(range(10)), ttl=5)
     df_aux = df_aux.dropna(how="all")
 
+    df_aux2= conn.read(worksheet="Nómina General", usecols=list(range(40)), ttl=5)
+    df_aux2 = df_aux2.dropna(how="all")
+
     NOMBRES = df_aux.iloc[:, 0].dropna().tolist()
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
     BODEGA = df_aux.iloc[:, 2].dropna().tolist()
@@ -171,6 +174,7 @@ def app():
 
             total_dos = round(sueldo_dos + finiquito2, 2)
             total = round(total_uno + total_dos + he, 2)
+
             empleado_data = pd.DataFrame(
                 [
                     {
@@ -221,9 +225,40 @@ def app():
 
             conn.update(worksheet="Nómina", data=updated_df)
 
+            empleado_data = pd.DataFrame(
+                [
+                    {
+                        "BODEGA": bodega,
+                        "EVENTO": evento,
+                        "PERIODO TRABAJADO": f"{inicio.strftime('%Y-%m-%d')} al {fin.strftime('%Y-%m-%d')}",
+                        "NOMBRE COMPLETO": nombre_empleado,
+                        "ESTATUS DE NÓMINA": estatus_nomina,
+                        "ALTA DEL SEGURO SOCIAL": alta_seguro,                        
+                        "HORARIO": horario,  
+                        "HORAS EXTRAS AUTORIZADAS": horas_extra,
+                        "TOTAL DE DÍAS TRABAJADOS": total_dias,
+                        "TOTAL SUELDO": total_uno,                    
+                        "TOTAL DE HORAS EXTRAS": he,
+                        "TOTAL CAPACITACION PROPORCIONADA POR PROVEEDOR": 0, 
+                        "BANCO": " ",
+                        "CUENTA": " ",
+                        "TARJETA": " ",
+                        "CLABE INTERBANCARIA": " ",
+                        "RFC": " ",
+                        "OBSERVACIONES": observaciones,                      
+                    }
+                ]
+            )
+
+            updated_df = pd.concat([df_aux2, empleado_data], ignore_index=True)
+
+            conn.update(worksheet="Nómina General", data=updated_df)
+
             st.success("Calculo agregado satisfactoriamente")
 
-    st.dataframe(df)
+   
+    st.dataframe(df_aux2)
+
 
 if __name__ == "__main__":
     app()
