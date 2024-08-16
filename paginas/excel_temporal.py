@@ -94,6 +94,7 @@ def app():
                 sueldo_uno += dia_festivo
             else:
                 dia_festivo = 0
+
             # Inicializar bono de coordinador
             bono_coordinador = 0
 
@@ -248,7 +249,8 @@ def app():
         nomina = calcular_nomina(st.session_state.eventos)
         df_nomina = pd.DataFrame(nomina)
         st.session_state.eventos = []
-        # Generar archivo Excel
+
+        # Generar archivo Excel con fecha y hora
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df_nomina.to_excel(writer, index=False, sheet_name='Nómina')
@@ -257,7 +259,7 @@ def app():
         st.download_button(label="Descargar Nómina en Excel", data=output, file_name='nomina.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
         st.write("Cálculo de nómina completado:")
-        st.write(df_nomina)      
+        st.write(df_nomina) 
 
 # Llamada a la función app para ejecutar la aplicación
 if __name__ == "__main__":

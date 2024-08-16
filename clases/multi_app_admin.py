@@ -55,7 +55,7 @@ class MultiApp:
             )
             app = option_menu(
                 menu_title=False,
-                options=["Reportes", "Nómina GoogleSheet","Nómina Temporal","Pruebas"],
+                options=["Nómina GoogleSheet","Nómina Temporal","Pruebas"],
                  icons=["house", "calculator", "file", "wallet"],
                 menu_icon="heart-eyes-fill",
                 default_index=0,
@@ -67,12 +67,9 @@ class MultiApp:
                 }
             )
         app_modules = {
-            'Reportes': 'paginas.nominas',
             'Nómina GoogleSheet': 'paginas.formulario',
             'Nómina Temporal': 'paginas.excel_temporal',
-            'Pruebas': 'paginas.pruebas'
-
-            
+            'Pruebas': 'paginas.pruebas'            
         }
         if app in app_modules:
             module = importlib.import_module(app_modules[app])

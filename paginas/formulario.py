@@ -84,6 +84,14 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
 
 def app():
     st.title("CALCULADORA DE NÓMINAS")
+    st.markdown("""
+    <style>
+    .stAlert {
+        background-color: #1E3A8A;  /* Cambia el color a un azul más oscuro */
+        color: white;  /* Cambia el color del texto a blanco */
+    }
+    </style>
+    """, unsafe_allow_html=True)
     st.info('Rellenar los campos requeridos', icon="ℹ️")
     conn = st.connection("gsheets3", type=GSheetsConnection)
 
