@@ -27,93 +27,103 @@ def app():
     def obtener_salario_y_premio(puesto, zona, total_dias_t2):
         if puesto == 'DEMOSTRADOR':
             if zona == 'INTERIOR':
-                return SALARIO_BASE[0], SALARIO_BASE[1], 0.1, 0.1, 0.1, 0.1, True, True
+                return SALARIO_BASE[0], SALARIO_BASE[1], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
             elif zona == 'FRONTERA':
                 if total_dias_t2 >= 1:
-                    return SALARIO_BASE[2], SALARIO_BASE[3], 0.068, 0.068, 0.1, 0.1, False, True
+                    return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, True, False
                 else:
-                    return SALARIO_BASE[2], SALARIO_BASE[3], 0.068, 0.068, 0.1, 0.1, False, False       
+                    return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, False, False
             elif zona == 'ESPECIAL':
-                return SALARIO_BASE[4], SALARIO_BASE[5], 0.1, 0.1, 0.1, 0.1, True, True
+                return SALARIO_BASE[4], SALARIO_BASE[5], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
             elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[6], 0, 0.1, 0.1, 0.1, 0.1, True, True
+                return SALARIO_BASE[6], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
             elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[7], 0, 0.1, 0.1, 0.1, 0.1, True, True
+                return SALARIO_BASE[7], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
         elif puesto == 'COORDINADOR':
             if zona == 'INTERIOR':
-                return SALARIO_BASE[8],  0, 0, 0.1, 0, 0, True, True
+                return SALARIO_BASE[8], SALARIO_BASE[8], SALARIO_BASE[8], 0, 0.1, 0, 0.1, True, True, True
             elif zona == 'FRONTERA':
-                return SALARIO_BASE[11], 0, 0, 0, 0, 0, False, True
+                return SALARIO_BASE[11], SALARIO_BASE[11], SALARIO_BASE[11], 0, 0, 0, 0, False, False, False
             elif zona == 'ESPECIAL':
-                return SALARIO_BASE[13], 0, 0.1, 0.1 , 0, 0, True, True
+                return SALARIO_BASE[13], SALARIO_BASE[13], SALARIO_BASE[13], 0.1, 0.1, 0.1, 0.1, True, True, True
             elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[15], 0, 0.1, 0.1, 0, 0, True, True
+                return SALARIO_BASE[15], SALARIO_BASE[15], SALARIO_BASE[15], 0.1, 0.1, 0.1, 0.1, True, True, True
             elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[16], 0, 0.1, 0.1 , 0, 0, True, True
+                return SALARIO_BASE[16], SALARIO_BASE[16], SALARIO_BASE[16], 0.1, 0.1, 0.1, 0.1, True, True, True
         elif puesto == 'COORDINADOR Y DEMOSTRADOR':
             if zona == 'INTERIOR':
-                return SALARIO_BASE[10], 0, 0.1, 0.1, 0, 0, True, True
+                return SALARIO_BASE[10], 0, 0, 0.1, 0.1, 0, 0, True, False, False
             elif zona == 'FRONTERA':
-                return SALARIO_BASE[12], 0, 0.1, 0.1, 0, 0, True, True
+                return SALARIO_BASE[12], 0, 0, 0.1, 0.1, 0, 0, True, False, False
             elif zona == 'ESPECIAL':
-                return SALARIO_BASE[14], 0, 0.1, 0.1, 0, 0, True, True
+                return SALARIO_BASE[14], 0, 0, 0.1, 0.1, 0, 0, True, False, False
+    
+        # Si no se encuentra una combinación válida, devolver valores por defecto
+        return 0, 0, 0, 0, 0, 0, 0, False, False, False
         
 
-    def calcular_finiquito(salario_base, dias_finiquito, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
+    def calcular_finiquito(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
     # Función para calcular el finiquito con base en las reglas proporcionadas
-        aguinaldo = round((salario_base * (15 / 365)) * dias_finiquito, 2)
-        vacaciones = round((salario_base * (12 / 365)) * dias_finiquito, 2)
-        prima_vacacional = round(vacaciones * 0.25, 2)
-        prima_dominical = round(((1 * 0.25) / 7) * salario_base * dias_finiquito, 2) if incluir_prima_dominical else 0
-        prem_asis = round(salario_base * prem_punt_pct * dias_finiquito, 2)
-        prem_punt = round(salario_base * prem_asis_pct * dias_finiquito, 2)
-        sueldo_integrado = round(salario_base + aguinaldo + vacaciones + prima_vacacional + prima_dominical, 2)
-        finiquito = round(aguinaldo + vacaciones + prima_vacacional + prima_dominical + prem_asis + prem_punt, 2)
-        return aguinaldo, vacaciones, prima_vacacional, prima_dominical, prem_asis, prem_punt, sueldo_integrado, finiquito
+        aguinaldo = round((salario_base * (15 / 365)), 2)
+        vacaciones = round((salario_base * (12 / 365)), 2)
+        prima_vacacional = round(vacaciones * 0.25, 2)  
+        prima_dominical = round(((1 * 0.25) / 7) * salario_base, 2) if incluir_prima_dominical else 0
+        prem_asis = round(salario_base * prem_punt_pct, 2)
+        prem_punt = round(salario_base * prem_asis_pct, 2)
+        sueldo_integrado = round(salario_base + aguinaldo + vacaciones + prima_vacacional + prima_dominical, 2)   
+        fini = round((aguinaldo + vacaciones + prima_vacacional), 2)
+
+        return aguinaldo, vacaciones, prima_vacacional, prima_dominical, prem_asis, prem_punt, sueldo_integrado, fini
 
     def calcular_nomina(eventos):
         resultados = []
         for evento in eventos:
-            salario_base, salario_base_dos, prem_punt_pct1, prem_asis_pct1, prem_punt_pct2, prem_asis_pct2, incluir_prima_dominical1, incluir_prima_dominical2 = obtener_salario_y_premio(evento['puesto'], evento['zona'], evento['total_dias_t2'])
+            salario_base, salario_base_dos, salario_base_tres, prem_punt_pct1, prem_asis_pct1, prem_punt_pct2, prem_asis_pct2, incluir_prima_dominical1, incluir_prima_dominical2, incluir_prima_dominical3 = obtener_salario_y_premio(evento['puesto'], evento['zona'], evento['total_dias_t2'])
 
             # Calcula finiquitos y demás detalles
-            aguinaldo, vacaciones, prima_vacacional, prima_dominical1, prem_asis, prem_punt, sueldo_integrado1, finiquito = calcular_finiquito(salario_base, evento['dias_finiquito'], prem_punt_pct1, prem_asis_pct1, incluir_prima_dominical1)
+            aguinaldo, vacaciones, prima_vacacional, prima_dominical1, prem_asis, prem_punt, sueldo_integrado1, fini1 = calcular_finiquito(salario_base, prem_punt_pct1, prem_asis_pct1, incluir_prima_dominical1)
 
             if evento['total_dias_t2'] >= 1:
-                aguinaldo2, vacaciones2, prima_vacacional2, prima_dominical2, prem_asis2, prem_punt2, sueldo_integrado2, finiquito2 = calcular_finiquito(salario_base_dos, evento['dias_finiquito2'], prem_punt_pct2, prem_asis_pct2, incluir_prima_dominical2)
+                aguinaldo2, vacaciones2, prima_vacacional2, prima_dominical2, prem_asis2, prem_punt2, sueldo_integrado2, fini2 = calcular_finiquito(salario_base_dos, prem_punt_pct2, prem_asis_pct2, incluir_prima_dominical2)
             else:
-                aguinaldo2 = vacaciones2 = prima_vacacional2 = prima_dominical2 = prem_asis2 = prem_punt2 = sueldo_integrado2 = finiquito2 = 0
+                aguinaldo2 = vacaciones2 = prima_vacacional2 = prima_dominical2 = prem_asis2 = prem_punt2 = sueldo_integrado2 = fini2 = 0
+            if evento['total_dias_t3'] >= 1:
+                aguinaldo3, vacaciones3, prima_vacacional3, prima_dominical3, prem_asis3, prem_punt3, sueldo_integrado3, fini3 = calcular_finiquito(salario_base_tres, prem_punt_pct1, prem_asis_pct1, incluir_prima_dominical3)
+            else:
+                aguinaldo3 = vacaciones3 = prima_vacacional3 = prima_dominical3 = prem_asis3 = prem_punt3 = sueldo_integrado3 = fini3 = 0
 
             # Calcular sueldo y total
-            sueldo_uno = round(salario_base * evento['dias_trabajados'], 2)
-            sueldo_dos = round(salario_base_dos * evento['total_dias_t2'], 2)
+
             he = evento['horas_extra'] * 50
+
+            sueldo_cotizacion1 = round(salario_base + prima_dominical1 + prem_asis + prem_punt, 2)
+            sueldo_cotizacion2 = round(salario_base_dos + prima_dominical2 + prem_asis2 + prem_punt2, 2) if  evento['total_dias_t2'] >= 1 else 0
+            sueldo_cotizacion3 = round(salario_base_tres + prima_dominical3 + prem_asis3 + prem_punt3, 2) if evento['total_dias_t3'] >= 1 else 0
+
+            if  evento['total_dias_t2'] == 0:
+                salario_base_dos = 0
+            if  evento['total_dias_t3'] == 0:
+                salario_base_tres = 0
+
+            if  evento['dias_finiquito'] == 0:
+                fini1 = 0
+            if evento['dias_finiquito2'] == 0:
+                fini2 = 0
+            if evento['dias_finiquito3'] == 0:
+                fini3 = 0
+
+            total_uno = round(sueldo_cotizacion1 * evento['dias_trabajados'], 2) if evento['dias_finiquito'] == 0 else round(sueldo_cotizacion1 * evento['dias_trabajados'], 2) + round(fini1 * evento['dias_finiquito'], 2)
+            total_dos = round(sueldo_cotizacion2 * evento['total_dias_t2'], 2) if evento['dias_finiquito2'] == 0 else round(sueldo_cotizacion2 * evento['total_dias_t2'] + round(fini2 * evento['dias_finiquito2']), 2)
+            total_tres = round(sueldo_cotizacion3 * evento['total_dias_t3'], 2) if evento['dias_finiquito3'] == 0 else round(sueldo_cotizacion3 * evento['total_dias_t3'] + round(fini3 * evento['dias_finiquito3']), 2)
+            
 
             if evento['dia_festivos_c'] == True:  
                 dia_festivo = round(dia_festivos * 2, 2)              
-                sueldo_uno += dia_festivo
+                total_uno += dia_festivo 
             else:
                 dia_festivo = 0
 
-            # Inicializar bono de coordinador
-            bono_coordinador = 0
-
-            # Lógica para calcular el bono del coordinador en el total_uno
-            if evento['puesto'] == 'COORDINADOR' and evento['zona'] == 'INTERIOR':
-                if evento['cant_eventos'] == 0:
-                    total_uno = round(sueldo_uno + finiquito, 2)
-                    bono_coordinador = 0
-                elif evento['cant_eventos'] == 1:
-                    total_uno = round((sueldo_uno + finiquito) * 2, 2)
-                    bono_coordinador = 250
-                elif evento['cant_eventos'] == 2:
-                    total_uno = round((sueldo_uno + finiquito) * 3, 2)
-                    bono_coordinador = 500
-            else:
-                total_uno = round(sueldo_uno + finiquito, 2)
-            
-            total_dos = round(sueldo_dos + finiquito2, 2)
-            total = round(total_uno + total_dos + he, 2)
+            total = round(total_uno + total_dos + total_tres + he, 2)
 
             resultados.append({
                 'PUESTO': evento['puesto'],
@@ -127,7 +137,7 @@ def app():
                 'HORARIO': evento['horario'],
                 'HORAS EXTRA AUTORIZADAS': evento['horas_extra'],
                 'TOTAL DE DÍAS TRABAJADOS': evento['dias_trabajados'],
-                'TOTAL DE SUELDOS': total_uno,
+                
                 'TOTAL DE HORA EXTRA': he,
                 'TOTAL CAPACITACION': "",
                 'BANCO': "",
@@ -135,31 +145,52 @@ def app():
                 'TARJETA': "",
                 'CLABE INTERBANCARIA': "",
                 'RFC': "",
-                'OBSERVACIONES': evento['observaciones'],
                 ' ' : "",              
                 'Días finiquito 1 evento': evento['dias_finiquito'],
                 'Días trabajados 2 eventos': evento['total_dias_t2'],
                 'Días finiquito 2 eventos': evento['dias_finiquito2'],
-                'Bonos Coordinador': bono_coordinador,
-                'Aguinaldo 1': aguinaldo,
-                'Vacaciones 1': vacaciones,
-                'Prima vacacional 1': prima_vacacional,
-                'Prima dominical 1': prima_dominical1,
-                'Premio asistencia 1': prem_asis,
-                'Premio puntualidad 1': prem_punt,
-                'Sueldo integrado 1': sueldo_integrado1,
-                'Finiquito 1': finiquito,
-                'Aguinaldo 2': aguinaldo2,
-                'Vacaciones 2': vacaciones2,
-                'Prima vacacional 2': prima_vacacional2,
-                'Prima dominical 2': prima_dominical2,
-                'Premio asistencia 2': prem_asis2,
-                'Premio puntualidad 2': prem_punt2,
-                'Sueldo integrado 2': sueldo_integrado2,
-                'Finiquito 2': finiquito2,
-                'Sueldo 1': total_uno,
-                'Sueldo 2': total_dos,
-                'Total': total
+
+                "SALARIO DIARIO UN EVENTO (P001)": salario_base,
+                "AGUINALDO (P002)": aguinaldo,
+                "VACACIONES (P001)": vacaciones,
+                "PRIMA VACACIONAL (P021)": prima_vacacional,
+                "PRIMA DOMINICAL (P020)": prima_dominical1,
+                "PREMIO ASISTENCIA (P049)": prem_asis,
+                "PREMIO PUNTUALIDAD (P010)": prem_punt,
+                "FINIQUITO UN EVENTO": fini1 * evento['dias_finiquito'],
+                "SUELDO INTEGRADO (IMSS)": sueldo_integrado1,
+                "SUELDO COTIZACIÓN S/F UN EVENTO": sueldo_cotizacion1 * evento['dias_trabajados'],
+                
+                "SUELDO POR COBRAR UN EVENTO": total_uno,
+
+                "SALARIO DIARIO DOS EVENTOS (P001)": salario_base_dos,
+                "AGUINALDO 2 (P002)": aguinaldo2,
+                "VACACIONES 2 (P001)": vacaciones2,
+                "PRIMA VACACIONAL 2 (P021)": prima_vacacional2,
+                "PRIMA DOMINICAL 2 (P020)": prima_dominical2,
+                "PREMIO ASISTENCIA 2 (P049)": prem_asis2,
+                "PREMIO PUNTUALIDAD 2 (P010)": prem_punt2,
+                "FINIQUITO DOS EVENTOS":fini2 * evento['dias_finiquito2'],
+                "SUELDO INTEGRADO 2 (IMSS)": sueldo_integrado2,
+                "SUELDO COTIZACIÓN S/F DOS EVENTOS": sueldo_cotizacion2 * evento['total_dias_t2'],
+                
+                "SUELDO POR COBRAR DOS EVENTOS": total_dos,
+
+                "SALARIO DIARIO TRES EVENTOS (P001)": salario_base,
+                "AGUINALDO 3 (P002)": aguinaldo3,
+                "VACACIONES 3 (P001)": vacaciones3,
+                "PRIMA VACACIONAL 3 (P021)": prima_vacacional3,
+                "PRIMA DOMINICAL 3 (P020)": prima_dominical3,
+                "PREMIO ASISTENCIA 3 (P049)": prem_asis3,
+                "PREMIO PUNTUALIDAD 3 (P010)": prem_punt3,
+                "FINIQUITO TRES EVENTOS": fini3 * evento['dias_finiquito3'],
+                "SUELDO INTEGRADO 3 (IMSS)": sueldo_integrado3,
+                "SUELDO COTIZACIÓN S/F TRES EVENTOS ": sueldo_cotizacion3 * evento['total_dias_t3'],
+                
+                "SUELDO POR COBRAR TRES EVENTOS": total_tres,
+
+                "TOTAL DE LA NOMINA": total,
+                'OBSERVACIONES': evento['observaciones'],
             })
 
         return resultados
@@ -190,25 +221,27 @@ def app():
             observaciones = st.text_input(label="Observaciones")
             estatus_nomina = st.selectbox("Estatus de la nómina", options=NOMINA)
             st.write("Primer evento")
-            total_dias = st.number_input(label="Total de días trabajados*", min_value=1, max_value=21)
-            dias_finiquito = st.number_input(label="Días Finiquito 1 Turno", min_value=0, max_value=21)
+            total_dias = st.number_input(label="Total de días trabajados*", min_value=1, max_value=21, key="total_dias_1")
+            dias_finiquito = st.number_input(label="Días Finiquito 1 Turno", min_value=0, max_value=21, key="dias_finiquito_1")
+            dia_festivos_c = st.checkbox(label="Día festivo")
         with c2:
             bodega = st.selectbox("Bodega*", options=BODEGA)
             nombre_empleado = st.selectbox("Nombre completo", options=NOMBRES)
             inicio = st.date_input(label="Día inicio*")
             alta_seguro = st.selectbox("Alta del seguro social", options=SEGURO)
             st.write("Segundo evento")
-            total_dias_t2 = st.number_input(label="Días trabajados con doble turno", min_value=0, max_value=21)
-            dias_finiquito2 = st.number_input(label="Días Finiquito 2 Turnos", min_value=0, max_value=21)     
+            total_dias_t2 = st.number_input(label="Días trabajados con doble evento", min_value=0, max_value=21, key="total_dias_2")
+            dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")     
+            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
         with c3:
             zona = st.selectbox("Zona*", options=ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
-            fin = st.date_input(label="Día fin*")            
-            dia_festivos_c = st.checkbox(label="Día festivo")
-            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
-            horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0)  
-            cant_eventos = st.number_input("Bonos de coordinador", min_value=0, max_value=2)
-
+            fin = st.date_input(label="Día fin*")
+            horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0, key="horas_extra")  
+            st.write("Tercer evento")
+            total_dias_t3 = st.number_input(label="Días trabajados con tres eventos", min_value=0, max_value=21, key="total_dias_3")
+            dias_finiquito3 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_3")    
+            
         st.markdown("**Requerido*")
         submit_button = st.form_submit_button(label="Agregar evento")
 
@@ -227,7 +260,6 @@ def app():
             'alta_seguro': alta_seguro,
             'dia_festivo': dia_festivos,
             'horas_extra': horas_extra,
-            'cant_eventos': cant_eventos,
             'zona': zona,
             'horario': horario,
             'fin': fin,
@@ -235,7 +267,9 @@ def app():
             'total_dias_t2': total_dias_t2,
             'dias_finiquito2': dias_finiquito2,
             'observaciones': observaciones,
-            'estatus_nomina': estatus_nomina
+            'estatus_nomina': estatus_nomina,
+            'total_dias_t3': total_dias_t3,
+            'dias_finiquito3': dias_finiquito3,
             })
         
 
