@@ -33,6 +33,19 @@ SALARIO_BASE = [265.6,  #INTERIOR DEMOSTRADOR UN EVENTO     [0]
                 228,    #INTERIOR DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [15]
                 239,    #ESPECIAL DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [16]                    
                 ]
+tarifas_isr = [
+    {"limite_inferior": 0.01, "limite_superior": 171.78, "cuota_fija": 0.00, "porcentaje": 0.0192},
+    {"limite_inferior": 171.78, "limite_superior": 1458.03, "cuota_fija": 3.29, "porcentaje": 0.0640},
+    {"limite_inferior": 1458.03, "limite_superior": 2562.35, "cuota_fija": 85.61, "porcentaje": 0.1088},
+    {"limite_inferior": 2562.35, "limite_superior": 2978.64, "cuota_fija": 205.80, "porcentaje": 0.16},
+    {"limite_inferior": 2978.64, "limite_superior": 3566.22, "cuota_fija": 272.37, "porcentaje": 0.1792},
+    {"limite_inferior": 3566.22, "limite_superior": 7192.64, "cuota_fija": 377.65, "porcentaje": 0.2136},
+    {"limite_inferior": 7192.64, "limite_superior": 11336.57, "cuota_fija": 1152.27, "porcentaje": 0.2352},
+    {"limite_inferior": 11336.57, "limite_superior": 21643.30, "cuota_fija": 2126.95, "porcentaje": 0.30},
+    {"limite_inferior": 21643.30, "limite_superior": 28857.78, "cuota_fija": 5218.92, "porcentaje": 0.32},
+    {"limite_inferior": 28857.78, "limite_superior": 86573.34, "cuota_fija": 7527.59, "porcentaje": 0.34},
+    {"limite_inferior": 86573.34, "limite_superior": float("inf"), "cuota_fija": 27150.83, "porcentaje": 0.35}
+]
 # Función para calcular el finiquito
 def calcular_nomina(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
     aguinaldo = round((salario_base * (15 / 365)), 2)
@@ -42,13 +55,17 @@ def calcular_nomina(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_do
     prem_asis = round(salario_base * prem_punt_pct, 2)
     prem_punt = round(salario_base * prem_asis_pct, 2)
     sueldo_integrado = round(salario_base + aguinaldo + vacaciones + prima_vacacional + prima_dominical, 2)
-    
     fini = round(aguinaldo + vacaciones + prima_vacacional, 2)
  
-
     return aguinaldo, vacaciones, prima_vacacional, prima_dominical, prem_asis, prem_punt, sueldo_integrado, fini
 
 # Función para obtener el salario base y el porcentaje de la prima vacacional según el puesto y la zona
+def calcular_isr(base_isr):
+    for tarifa in tarifas_isr:
+        if tarifa["limite_inferior"] <= base_isr <= tarifa["limite_superior"]:
+            isr = tarifa["cuota_fija"] + (base_isr - tarifa["limite_inferior"]) * tarifa["porcentaje"]
+            return round(isr, 2)        
+    return 0.0
 
 def obtener_salario_y_premio(puesto, zona, total_dias_t2):
     if puesto == 'DEMOSTRADOR':
@@ -99,7 +116,7 @@ def app():
     st.info('Rellenar los campos requeridos', icon="ℹ️")
     conn = st.connection("gsheets3", type=GSheetsConnection)
 
-    df = conn.read(worksheet="Nómina", usecols=list(range(55)), ttl=5)
+    df = conn.read(worksheet="Nómina", usecols=list(range(60)), ttl=5)
     df = df.dropna(how="all")
 
     df_aux = conn.read(worksheet="Datos", usecols=list(range(10)), ttl=5)
@@ -121,7 +138,6 @@ def app():
     SEGURO = ["FINIQUITO", "NOMINA", "CORTE"]
     NOMINA = ["FINIQUITO", "CORTE"]
 
-
     with st.form(key="empleado_form"):
         
         c1, c2, c3 = st.columns(3)
@@ -142,7 +158,7 @@ def app():
             st.write("Segundo evento")
             total_dias_t2 = st.number_input(label="Días trabajados con doble evento", min_value=0, max_value=21, key="total_dias_2")
             dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")     
-            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
+            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)            
         with c3:
             zona = st.selectbox("Zona*", options=ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
@@ -150,7 +166,19 @@ def app():
             horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0, key="horas_extra")  
             st.write("Tercer evento")
             total_dias_t3 = st.number_input(label="Días trabajados con tres eventos", min_value=0, max_value=21, key="total_dias_3")
-            dias_finiquito3 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_3")    
+            dias_finiquito3 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_3") 
+            bono = st.number_input(label="Bono", min_value=0, key="bono")   
+        st.subheader("Deducciones")
+        
+        c4, c5, c6 = st.columns(3)  
+        
+        with c4:            
+            infonavit = st.number_input(label="Infonavit", min_value=0, key="infonavit")
+           
+        with c5:
+            prestamo = st.number_input(label="Prestamo", min_value=0, key="prestamo")
+        with c6:            
+            imss = st.number_input(label="IMSS", min_value=0, key="imss")      
             
         st.markdown("**Requerido*")
 
@@ -203,7 +231,12 @@ def app():
             else:
                 dia_festivo = 0
 
+            if bono > 0:
+                total_uno += bono                
+            base_isr = round((salario_base + prem_asis + prem_punt) * total_dias + ((he / 2) + dia_festivo + bono + (vacaciones * dias_finiquito)),2) 
             total = round(total_uno + total_dos + total_tres + he, 2)
+
+            isr_calculado = calcular_isr(base_isr)        
 
             empleado_data = pd.DataFrame(
                 [
@@ -223,47 +256,56 @@ def app():
                         "TOTAL DÍAS FINIQUITO UN EVENTO": dias_finiquito,
                         "TOTAL DÍAS FINIQUITO DOS EVENTOS": dias_finiquito2,
                         "TOTAL DÍAS FINIQUITO TRES EVENTOS": dias_finiquito3,
-
-                        "SALARIO DIARIO UN EVENTO (P001)": salario_base,
-                        "AGUINALDO (P002)": aguinaldo,
-                        "VACACIONES (P001)": vacaciones,
-                        "PRIMA VACACIONAL (P021)": prima_vacacional,
-                        "PRIMA DOMINICAL (P020)": prima_dominical1,
-                        "PREMIO ASISTENCIA (P049)": prem_asis,
-                        "PREMIO PUNTUALIDAD (P010)": prem_punt,
+                        "SALARIO BASE": salario_base,
+                        "SALARIO DIARIO UN EVENTO (P001)": salario_base * total_dias,
+                        "AGUINALDO (P002)": aguinaldo * dias_finiquito,
+                        "VACACIONES (P001)": vacaciones * dias_finiquito,
+                        "PRIMA VACACIONAL (P021)": prima_vacacional * dias_finiquito,
+                        "PRIMA DOMINICAL (P020)": prima_dominical1 * total_dias,
+                        "PREMIO ASISTENCIA (P049)": prem_asis * total_dias,
+                        "PREMIO PUNTUALIDAD (P010)": prem_punt * total_dias,
                         "FINIQUITO UN EVENTO": fini * dias_finiquito,
-                        "SUELDO INTEGRADO (IMSS)": sueldo_integrado1,
+                        "SUELDO INTEGRADO (IMSS)": sueldo_integrado1 * total_dias,
                         "SUELDO COTIZACIÓN S/F UN EVENTO": sueldo_cotizacion1 * total_dias,
                      
                         "SUELDO POR COBRAR UN EVENTO": total_uno,
 
-                        "SALARIO DIARIO DOS EVENTOS (P001)": salario_base_dos,
-                        "AGUINALDO 2 (P002)": aguinaldo2,
-                        "VACACIONES 2 (P001)": vacaciones2,
-                        "PRIMA VACACIONAL 2 (P021)": prima_vacacional2,
-                        "PRIMA DOMINICAL 2 (P020)": prima_dominical2,
-                        "PREMIO ASISTENCIA 2 (P049)": prem_asis2,
-                        "PREMIO PUNTUALIDAD 2 (P010)": prem_punt2,
+                        "SALARIO BASE DOS EVENTOS": salario_base_dos,
+                        "SALARIO DIARIO DOS EVENTOS (P001)": salario_base_dos * total_dias_t2,
+                        "AGUINALDO 2 (P002)": aguinaldo2 * dias_finiquito2,
+                        "VACACIONES 2 (P001)": vacaciones2 * dias_finiquito2,
+                        "PRIMA VACACIONAL 2 (P021)": prima_vacacional2 * dias_finiquito2,
+                        "PRIMA DOMINICAL 2 (P020)": prima_dominical2 * total_dias_t2,
+                        "PREMIO ASISTENCIA 2 (P049)": prem_asis2 * total_dias_t2,
+                        "PREMIO PUNTUALIDAD 2 (P010)": prem_punt2 * total_dias_t2,
                         "FINIQUITO DOS EVENTOS":fini2 * dias_finiquito2,
-                        "SUELDO INTEGRADO 2 (IMSS)": sueldo_integrado2,
+                        "SUELDO INTEGRADO 2 (IMSS)": sueldo_integrado2 * total_dias_t2,
                         "SUELDO COTIZACIÓN S/F DOS EVENTOS": sueldo_cotizacion2 * total_dias_t2,
                        
                         "SUELDO POR COBRAR DOS EVENTOS": total_dos,
 
-                        "SALARIO DIARIO TRES EVENTOS (P001)": salario_base,
-                        "AGUINALDO 3 (P002)": aguinaldo3,
-                        "VACACIONES 3 (P001)": vacaciones3,
-                        "PRIMA VACACIONAL 3 (P021)": prima_vacacional3,
-                        "PRIMA DOMINICAL 3 (P020)": prima_dominical3,
-                        "PREMIO ASISTENCIA 3 (P049)": prem_asis3,
-                        "PREMIO PUNTUALIDAD 3 (P010)": prem_punt3,
+                        "SALARIO BASE TRES EVENTOS": salario_base_tres,
+                        "SALARIO DIARIO TRES EVENTOS (P001)": salario_base_tres * total_dias_t3,
+                        "AGUINALDO 3 (P002)": aguinaldo3 * dias_finiquito3,
+                        "VACACIONES 3 (P001)": vacaciones3  * dias_finiquito3,
+                        "PRIMA VACACIONAL 3 (P021)": prima_vacacional3 * dias_finiquito3,
+                        "PRIMA DOMINICAL 3 (P020)": prima_dominical3 * total_dias_t3,
+                        "PREMIO ASISTENCIA 3 (P049)": prem_asis3 * total_dias_t3,
+                        "PREMIO PUNTUALIDAD 3 (P010)": prem_punt3 * total_dias_t3,
                         "FINIQUITO TRES EVENTOS": fini3 * dias_finiquito3,
-                        "SUELDO INTEGRADO 3 (IMSS)": sueldo_integrado3,
+                        "SUELDO INTEGRADO 3 (IMSS)": sueldo_integrado3 * total_dias_t3,
                         "SUELDO COTIZACIÓN S/F TRES EVENTOS ": sueldo_cotizacion3 * total_dias_t3,
                        
                         "SUELDO POR COBRAR TRES EVENTOS": total_tres,
 
                         "TOTAL DE LA NOMINA": total,
+                        "BASE ISR": base_isr,
+                        "ISR": isr_calculado,
+                        "INFONAVIT": infonavit,
+                        "PRESTAMO": prestamo,
+                        "IMSS": imss,
+                        "TOTAL A PAGAR": total - isr_calculado - infonavit - prestamo - imss,
+
                         "OBSERVACIONES": observaciones,
                     }
                 ]
@@ -288,6 +330,7 @@ def app():
                         "TOTAL SUELDO": total_uno,                    
                         "TOTAL DE HORAS EXTRAS": he,
                         "TOTAL CAPACITACION PROPORCIONADA POR PROVEEDOR": 0, 
+                        "ISR": isr_calculado,
                         "BANCO": " ",
                         "CUENTA": " ",
                         "TARJETA": " ",
@@ -332,8 +375,8 @@ def app():
                 conn.update(worksheet="Nómina Doble Turno", data=updated_df)
 
             st.success(f"Datos de {nombre_empleado} registrados correctamente.")
-   
-    st.dataframe(df)
+    with st.expander("Nóminas"):    
+        st.dataframe(df)
 
 
 if __name__ == "__main__":

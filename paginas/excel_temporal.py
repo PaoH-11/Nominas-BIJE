@@ -21,6 +21,19 @@ SALARIO_BASE = [265.6,  #INTERIOR DEMOSTRADOR UN EVENTO     [0]
                 228,    #INTERIOR DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [15]
                 239,    #ESPECIAL DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [16]                    
                 ]
+tarifas_isr = [
+    {"limite_inferior": 0.01, "limite_superior": 171.78, "cuota_fija": 0.00, "porcentaje": 0.0192},
+    {"limite_inferior": 171.78, "limite_superior": 1458.03, "cuota_fija": 3.29, "porcentaje": 0.0640},
+    {"limite_inferior": 1458.03, "limite_superior": 2562.35, "cuota_fija": 85.61, "porcentaje": 0.1088},
+    {"limite_inferior": 2562.35, "limite_superior": 2978.64, "cuota_fija": 205.80, "porcentaje": 0.16},
+    {"limite_inferior": 2978.64, "limite_superior": 3566.22, "cuota_fija": 272.37, "porcentaje": 0.1792},
+    {"limite_inferior": 3566.22, "limite_superior": 7192.64, "cuota_fija": 377.65, "porcentaje": 0.2136},
+    {"limite_inferior": 7192.64, "limite_superior": 11336.57, "cuota_fija": 1152.27, "porcentaje": 0.2352},
+    {"limite_inferior": 11336.57, "limite_superior": 21643.30, "cuota_fija": 2126.95, "porcentaje": 0.30},
+    {"limite_inferior": 21643.30, "limite_superior": 28857.78, "cuota_fija": 5218.92, "porcentaje": 0.32},
+    {"limite_inferior": 28857.78, "limite_superior": 86573.34, "cuota_fija": 7527.59, "porcentaje": 0.34},
+    {"limite_inferior": 86573.34, "limite_superior": float("inf"), "cuota_fija": 27150.83, "porcentaje": 0.35}
+]
 def app():
     # Función para calcular la nómina
 
@@ -61,7 +74,6 @@ def app():
         # Si no se encuentra una combinación válida, devolver valores por defecto
         return 0, 0, 0, 0, 0, 0, 0, False, False, False
         
-
     def calcular_finiquito(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
     # Función para calcular el finiquito con base en las reglas proporcionadas
         aguinaldo = round((salario_base * (15 / 365)), 2)
@@ -74,7 +86,14 @@ def app():
         fini = round((aguinaldo + vacaciones + prima_vacacional), 2)
 
         return aguinaldo, vacaciones, prima_vacacional, prima_dominical, prem_asis, prem_punt, sueldo_integrado, fini
-
+    
+    def calcular_isr(base_isr):
+        for tarifa in tarifas_isr:
+            if tarifa["limite_inferior"] <= base_isr <= tarifa["limite_superior"]:
+                isr = tarifa["cuota_fija"] + (base_isr - tarifa["limite_inferior"]) * tarifa["porcentaje"]
+                return round(isr, 2)        
+        return 0.0
+    
     def calcular_nomina(eventos):
         resultados = []
         for evento in eventos:
@@ -123,7 +142,19 @@ def app():
             else:
                 dia_festivo = 0
 
+            if evento['bono'] > 0:
+                bono = evento['bono']
+                total_uno += bono
+            else:
+                bono = 0
+            
+            base_isr = round((salario_base + prem_asis + prem_punt) * total_dias + ((he / 2) + dia_festivo + bono + (vacaciones * dias_finiquito)),2) 
             total = round(total_uno + total_dos + total_tres + he, 2)
+            
+            isr_calculado = calcular_isr(base_isr)
+            deducciones = round(evento['infonavit'] + evento['prestamo'] + evento['imss'] + isr_calculado, 2)
+            
+            
 
             resultados.append({
                 'PUESTO': evento['puesto'],
@@ -188,8 +219,16 @@ def app():
                 "SUELDO COTIZACIÓN S/F TRES EVENTOS ": sueldo_cotizacion3 * evento['total_dias_t3'],
                 
                 "SUELDO POR COBRAR TRES EVENTOS": total_tres,
-
+                
                 "TOTAL DE LA NOMINA": total,
+                "BASE ISR": base_isr,
+                "ISR": isr_calculado,
+                "INFONAVIT": infonavit,
+                "PRESTAMO": prestamo,
+                "IMSS": imss,
+                "DEDUCCIONES": deducciones,
+                "TOTAL A PAGAR": total - isr_calculado - infonavit - prestamo - imss,
+
                 'OBSERVACIONES': evento['observaciones'],
             })
 
@@ -232,7 +271,7 @@ def app():
             st.write("Segundo evento")
             total_dias_t2 = st.number_input(label="Días trabajados con doble evento", min_value=0, max_value=21, key="total_dias_2")
             dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")     
-            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)
+            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)            
         with c3:
             zona = st.selectbox("Zona*", options=ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
@@ -240,7 +279,20 @@ def app():
             horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0, key="horas_extra")  
             st.write("Tercer evento")
             total_dias_t3 = st.number_input(label="Días trabajados con tres eventos", min_value=0, max_value=21, key="total_dias_3")
-            dias_finiquito3 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_3")    
+            dias_finiquito3 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_3") 
+            bono = st.number_input(label="Bono", min_value=0, key="bono")   
+        st.subheader("Deducciones")
+        
+        c4, c5, c6 = st.columns(3)  
+        
+        with c4:            
+            infonavit = st.number_input(label="Infonavit", min_value=0, key="infonavit")
+            
+                      
+        with c5:
+            prestamo = st.number_input(label="Prestamo", min_value=0, key="prestamo")
+        with c6:            
+            imss = st.number_input(label="IMSS", min_value=0, key="imss")      
             
         st.markdown("**Requerido*")
         submit_button = st.form_submit_button(label="Agregar evento")
@@ -250,31 +302,37 @@ def app():
 
         if submit_button:
             st.session_state.eventos.append({
-            'nombre': nombre_empleado,
-            'puesto': puesto,
-            'nombre_evento': evento,
-            'dias_trabajados': total_dias,
-            'dias_finiquito': dias_finiquito,
-            'bodega': bodega,
-            'inicio': inicio,
-            'alta_seguro': alta_seguro,
-            'dia_festivo': dia_festivos,
-            'horas_extra': horas_extra,
-            'zona': zona,
-            'horario': horario,
-            'fin': fin,
-            'dia_festivos_c': dia_festivos_c,
-            'total_dias_t2': total_dias_t2,
-            'dias_finiquito2': dias_finiquito2,
-            'observaciones': observaciones,
-            'estatus_nomina': estatus_nomina,
-            'total_dias_t3': total_dias_t3,
-            'dias_finiquito3': dias_finiquito3,
+                'nombre': nombre_empleado,
+                'puesto': puesto,
+                'nombre_evento': evento,
+                'dias_trabajados': total_dias,
+                'dias_finiquito': dias_finiquito,
+                'bodega': bodega,
+                'inicio': inicio,
+                'alta_seguro': alta_seguro,
+                'dia_festivo': dia_festivos,
+                'horas_extra': horas_extra,
+                'zona': zona,
+                'horario': horario,
+                'fin': fin,
+                'dia_festivos_c': dia_festivos_c,
+                'total_dias_t2': total_dias_t2,
+                'dias_finiquito2': dias_finiquito2,
+                'observaciones': observaciones,
+                'estatus_nomina': estatus_nomina,
+                'total_dias_t3': total_dias_t3,
+                'dias_finiquito3': dias_finiquito3,
+                'bono': bono,
+                'infonavit': infonavit,
+                'prestamo': prestamo,
+                'imss': imss,
+                
             })
         
 
         st.write("Eventos:")
-        st.write(pd.DataFrame(st.session_state.eventos))
+        with st.expander("Ver eventos"):
+            st.write(pd.DataFrame(st.session_state.eventos))
 
         # Calcular nómina y generar Excel
         
@@ -291,9 +349,10 @@ def app():
         output.seek(0)
 
         st.download_button(label="Descargar Nómina en Excel", data=output, file_name='nomina.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
+    
         st.write("Cálculo de nómina completado:")
-        st.write(df_nomina) 
+        with st.expander("Ver nómina"):
+            st.write(df_nomina) 
 
 # Llamada a la función app para ejecutar la aplicación
 if __name__ == "__main__":
