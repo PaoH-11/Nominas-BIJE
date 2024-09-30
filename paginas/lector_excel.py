@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+from streamlit_gsheets import GSheetsConnection
+from pandas import ExcelWriter
+import io
 
 SALARIO_BASE = [265.6,  #INTERIOR DEMOSTRADOR UN EVENTO     [0]
                 455,    #INTERIOR DEMOSTRADOR DOS EVENTOS   [1]
@@ -53,6 +56,18 @@ def calcular_isr(base_isr):
             return round(isr, 2)        
     return 0.0
 # Función para obtener el salario base y el porcentaje de la prima vacacional según el puesto y la zona
+def calcular_retencion(sdi, df_ret):
+    # Definir los nombres de las columnas
+    SALARIO_BASE_COL = 'Salario Base'  # Reemplaza con el nombre real de la columna de salario base
+    RETENCION_COL = 'Retención'  # Reemplaza con el nombre real de la columna de retención
+    
+    # Ordenar el DataFrame por el salario base en orden ascendente
+    df_ret = df_ret.sort_values(by=SALARIO_BASE_COL)
+    
+    # Buscar la fila correspondiente al SDI
+    for index, row in df_ret.iterrows():
+        if sdi <= row[SALARIO_BASE_COL]:
+            return row[RETENCION_COL]
 
 def obtener_salario_y_premio(puesto, zona, total_dias_t2):
     if puesto == 'DEMOSTRADOR':
@@ -91,9 +106,10 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
     # Si no se encuentra una combinación válida, devolver valores por defecto
     return 0, 0, 0, 0, 0, 0, 0, False, False, False
 
-def procesar_datos(df_empleados):
+def procesar_datos(df_empleados, df_ret):
     nuevos_registros = []
-    
+    nomina_uno_data = []
+
     for _, row in df_empleados.iterrows():
         puesto = row['PUESTO']
         zona = row['ZONA']
@@ -113,8 +129,11 @@ def procesar_datos(df_empleados):
         observaciones = row.get('OBSERVACIONES', '')
         infonavit = row.get('INFONAVIT', 0)
         prestamo = row.get('PRÉSTAMO', 0)
-        imss = row.get('IMSS', 0)
+        sdi = row.get('SDI', 0)
+        retencion = calcular_retencion(sdi, df_ret)
         bono = row.get('BONO', 0)
+        efectivo = row.get('EFECTIVO', 0)
+
         
         # Obtener salario y premios según el puesto y la zona
         salario_base, salario_base_dos, salario_base_tres, prem_punt_pct1, prem_asis_pct1, prem_punt_pct2, prem_asis_pct2, incluir_prima_dominical1, incluir_prima_dominical2, incluir_prima_dominical3 = obtener_salario_y_premio(puesto, zona, total_dias_t2)
@@ -158,7 +177,9 @@ def procesar_datos(df_empleados):
         
         base_isr = round((salario_base + prem_asis + prem_punt) * total_dias + ((he / 2) + dia_festivo + bono + (vacaciones * dias_finiquito)),2) 
         total = round(total_uno + total_dos + total_tres + he, 2)
+        retencion_dias = round((retencion/7) * total_dias, 2)
         isr_calculado = calcular_isr(base_isr)   
+        deducciones = isr_calculado + infonavit + prestamo + retencion_dias
 
         nuevo_registro = {
             "PUESTO": puesto,
@@ -215,31 +236,90 @@ def procesar_datos(df_empleados):
             
             "SUELDO POR COBRAR TRES EVENTOS": total_tres,
             
-            "TOTAL DE LA NOMINA": total,
+            "TOTAL DE LA NOMINA SIN DEDUCCIONES": total,
+            "EFECTIVO": efectivo,
             "BASE ISR": base_isr,
             "ISR": isr_calculado,
             "INFONAVIT": infonavit,
             "PRESTAMO": prestamo,
-            "IMSS": imss,
-            "TOTAL A PAGAR": total - isr_calculado - infonavit - prestamo - imss,
+            "IMSS": retencion_dias,
+            "TOTAL NETO A PAGAR": total - deducciones,
 
             "OBSERVACIONES": observaciones,
         }
         nuevos_registros.append(nuevo_registro)
+
+        
+        nomina_uno_registro = {
+            "BODEGA": bodega,
+            "EVENTO": evento,
+            "NOMBRE": nombre_completo,
+            "FECHA ALTA": " ",
+            "FECHA BAJA": " ",
+            "SEMANA NOI": " ",
+            "DIAS FINIQ": dias_finiquito + dias_finiquito2 + dias_finiquito3,
+            "DIAS": total_dias + total_dias_t2 + total_dias_t3,
+            "SBC": sueldo_integrado1,
+            "S.D.": salario_base,
+            "SUELDO": salario_base * total_dias, 
+            "TOTAL HORAS EXTRA": horas_extra,                    
+            "PASIST": prem_asis * total_dias,
+            "PPUNT": prem_punt * total_dias,
+            "HRS EXT": he,
+            "TIME EXT DOBLE": " ",
+            "PRIMA DOM IMPORTE": prima_dominical1 * total_dias,
+            "DIA FESTIVO": dia_festivo,
+            "BONO": bono,
+            "AGUI DIAS": "15",
+            "AGUI IMPORTE": aguinaldo * dias_finiquito,
+            "VAC DIAS": "12",
+            "VAC IMPORTE": vacaciones * dias_finiquito,
+            "P.V. %": "25%",
+            "P.VAC IMPORTE": prima_vacacional * dias_finiquito,
+            "PERCEPCIÓN TOTAL": total_uno,
+            "BASE ISR": base_isr,
+            "IMSS": retencion_dias,
+            "ISR (SUBSIDIO)": isr_calculado,
+            "PRESTAMO": prestamo,
+            "CREDITO INFONAVIT": infonavit,
+            "DEDUCCIÓN TOTAL": deducciones,
+            "NOMINA NETA": total - deducciones,
+            "NOMINA": " ",
+            "FINIQUITO": total - deducciones,
+            "EFECTIVO": efectivo,
+            "NETO A PAGAR": total - deducciones,
+            "STATUS": " ",
+            "DIFERENCIA": " ",
+            "COMENTARIOS": " ",
+        }
+        nomina_uno_data.append(nomina_uno_registro)
     
     # Crear DataFrame con los nuevos registros
     df_resultado = pd.DataFrame(nuevos_registros)
+    df_nomina_uno = pd.DataFrame(nomina_uno_data)
+
+    return df_resultado, df_nomina_uno
     
     # Generar archivo Excel para descargar
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_resultado.to_excel(writer, index=False, sheet_name='Nómina Calculada')
-    processed_file = output.getvalue()
+def to_excel_con_sheets(df1, df2):
+    if not isinstance(df1, pd.DataFrame) or not isinstance(df2, pd.DataFrame):
+        raise ValueError("Se esperaban objetos DataFrame, pero se recibió un tipo incorrecto.")
     
-    return processed_file
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df1.to_excel(writer, index=False, sheet_name='Nuevo Registro')
+        df2.to_excel(writer, index=False, sheet_name='Nómina Uno')
+    return output.getvalue()
 
 def app():
     st.title("CALCULADORA DE NÓMINAS")
+    conn = st.connection("gsheets3", type=GSheetsConnection)
+
+    df_ret = conn.read(worksheet="Retención", usecols=[0, 1], ttl=5).dropna(how="all")
+
+    if len(df_ret.columns) < 2:
+        st.error("El DataFrame 'Retención' no tiene suficientes columnas.")
+        st.stop()
     
     uploaded_file = st.file_uploader("Cargar archivo Excel con datos de empleados", type="xlsx")
     
@@ -249,15 +329,24 @@ def app():
         with st.expander("Nóminas"): 
             st.dataframe(df_empleados)
         
-        if st.button("Procesar datos y descargar Nómina Calculada"):
-            processed_file = procesar_datos(df_empleados)
+        if st.button("Procesar datos"):
+            df_resultado, df_nomina_uno = procesar_datos(df_empleados, df_ret)
             
-            st.download_button(
-                label="Descargar Nómina Calculada",
-                data=processed_file,
-                file_name="nomina_calculada.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            # Store the processed DataFrames in session state
+            st.session_state['df_resultado'] = df_resultado
+            st.session_state['df_nomina_uno'] = df_nomina_uno
+            
+            st.success("Datos procesados. Ahora puedes descargar los archivos.")
+
+    # Only show download buttons if data has been processed
+    if 'df_resultado' in st.session_state and 'df_nomina_uno' in st.session_state:
+        if st.download_button(
+            label="Descargar Nómina Completa",
+            data=to_excel_con_sheets(st.session_state['df_resultado'], st.session_state['df_nomina_uno']),
+            file_name="nomina_completa.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ):
+            st.success("Nómina Completa descargada exitosamente.")
 
 if __name__ == "__main__":
     app()

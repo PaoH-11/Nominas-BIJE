@@ -15,24 +15,8 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-SALARIO_BASE = [265.6,  #INTERIOR DEMOSTRADOR UN EVENTO     [0]
-                455,    #INTERIOR DEMOSTRADOR DOS EVENTOS   [1]
-                374.89, #FRONTERA DEMOSTRADOR UN EVENTO     [2]
-                594,    #FRONTERA DEMOSTRADOR DOS EVENTOS   [3]
-                298.2,  #ESPECIAL DEMOSTRADOR UN EVENTO     [4]
-                510,    #ESPECIAL DEMOSTRADOR DOS EVENTOS   [5]
-                304,    #INTERIOR DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [6]
-                326,    #ESPECIAL DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [7]
-                205.27, #INTERIOR COORDINADOR UN EVENTO     [8]
-                468.00, #INTERIOR COORDINADOR TRES EVENTOS  [9]
-                455,    #INTERIOR COORDINADOR Y DEMOSTRADOR UN EVENTO [10]
-                284,    #FRONTERA COORDINADOR UN EVENTO     [11]
-                580,    #FRONTERA COORDINADOR Y DEMOSTRADOR UN EVENTO [12]
-                209,    #ESPECIAL COORDINADOR UN EVENTO     [13]
-                507,    #ESPECIAL COORDINADOR Y DEMOSTRADOR UN EVENTO [14]
-                228,    #INTERIOR DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [15]
-                239,    #ESPECIAL DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [16]                    
-                ]
+SALARIO_BASE = [265.6, 455, 374.89, 594, 298.2, 510, 304, 326, 205.27, 468.00, 455, 284, 580, 209, 507, 228, 239]
+
 tarifas_isr = [
     {"limite_inferior": 0.01, "limite_superior": 171.78, "cuota_fija": 0.00, "porcentaje": 0.0192},
     {"limite_inferior": 171.78, "limite_superior": 1458.03, "cuota_fija": 3.29, "porcentaje": 0.0640},
@@ -46,6 +30,8 @@ tarifas_isr = [
     {"limite_inferior": 28857.78, "limite_superior": 86573.34, "cuota_fija": 7527.59, "porcentaje": 0.34},
     {"limite_inferior": 86573.34, "limite_superior": float("inf"), "cuota_fija": 27150.83, "porcentaje": 0.35}
 ]
+
+
 # Función para calcular el finiquito
 def calcular_nomina(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
     aguinaldo = round((salario_base * (15 / 365)), 2)
@@ -100,6 +86,7 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
             return SALARIO_BASE[12], 0, 0, 0.1, 0.1, 0, 0, True, False, False
         elif zona == 'ESPECIAL':
             return SALARIO_BASE[14], 0, 0, 0.1, 0.1, 0, 0, True, False, False
+        
 
 def app():
     st.title("CALCULADORA DE NÓMINAS")
@@ -116,27 +103,31 @@ def app():
     st.info('Rellenar los campos requeridos', icon="ℹ️")
     conn = st.connection("gsheets3", type=GSheetsConnection)
 
-    df = conn.read(worksheet="Nómina", usecols=list(range(60)), ttl=5)
-    df = df.dropna(how="all")
-
-    df_aux = conn.read(worksheet="Datos", usecols=list(range(10)), ttl=5)
-    df_aux = df_aux.dropna(how="all")
-
-    df_aux2= conn.read(worksheet="Nómina General", usecols=list(range(40)), ttl=5)
-    df_aux2 = df_aux2.dropna(how="all")
-
-    df_aux3= conn.read(worksheet="Nómina Doble Turno", usecols=list(range(40)), ttl=5)
-    df_aux3 = df_aux3.dropna(how="all")
+    df = conn.read(worksheet="Nómina", usecols=list(range(60)), ttl=5).dropna(how="all")
+    df_aux = conn.read(worksheet="Datos", usecols=list(range(10)), ttl=5).dropna(how="all")
+    df_aux2 = conn.read(worksheet="Nómina General", usecols=list(range(40)), ttl=5).dropna(how="all")
+    df_aux3 = conn.read(worksheet="Nómina Doble Turno", usecols=list(range(40)), ttl=5).dropna(how="all")
+    df_ret = conn.read(worksheet="Retención", usecols=[0, 1], ttl=5).dropna(how="all")
 
     NOMBRES = df_aux.iloc[:, 0].dropna().tolist()
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
     BODEGA = df_aux.iloc[:, 2].dropna().tolist()
     PUESTO = df_aux.iloc[:, 3].dropna().tolist()
-    SALARIOS = df_aux.iloc[:, 4].dropna().tolist()
+    SALARIOS = df_aux.iloc[:, 4].dropna().tolist() 
     ZONA = ["INTERIOR", "FRONTERA", "ESPECIAL", "INTERIOR JOYERÍA Y DEGUSTACIÓN", "ESPECIAL JOYERÍA Y DEGUSTACIÓN"]
     HORARIO = ["9 A 4", "2 A 9", "COORDINACIÓN"]
     SEGURO = ["FINIQUITO", "NOMINA", "CORTE"]
     NOMINA = ["FINIQUITO", "CORTE"]
+    column_names = list(df_ret.columns)
+    SALARIO_BASE_COL = column_names[0]  
+    RETENCION_COL = column_names[1]
+
+    if len(df_ret.columns) >= 2:
+        SALARIO_BASE_COL = df_ret.columns[0]
+        RETENCION_COL = df_ret.columns[1]
+    else:
+        st.error("El DataFrame 'Retención' no tiene suficientes columnas.")
+        st.stop()
 
     with st.form(key="empleado_form"):
         
@@ -150,6 +141,7 @@ def app():
             total_dias = st.number_input(label="Total de días trabajados*", min_value=1, max_value=21, key="total_dias_1")
             dias_finiquito = st.number_input(label="Días Finiquito 1 Turno", min_value=0, max_value=21, key="dias_finiquito_1")
             dia_festivos_c = st.checkbox(label="Día festivo")
+            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS) 
         with c2:
             bodega = st.selectbox("Bodega*", options=BODEGA)
             nombre_empleado = st.selectbox("Nombre completo", options=NOMBRES)
@@ -158,7 +150,7 @@ def app():
             st.write("Segundo evento")
             total_dias_t2 = st.number_input(label="Días trabajados con doble evento", min_value=0, max_value=21, key="total_dias_2")
             dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")     
-            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)            
+            efectivo = st.number_input(label="Efectivo", min_value=0, key="efectivo")           
         with c3:
             zona = st.selectbox("Zona*", options=ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
@@ -177,9 +169,12 @@ def app():
            
         with c5:
             prestamo = st.number_input(label="Prestamo", min_value=0, key="prestamo")
-        with c6:            
-            imss = st.number_input(label="IMSS", min_value=0, key="imss")      
-            
+        with c6:           
+            selected_sdi = st.selectbox(label="Seleccione su salario base", options=df_ret[SALARIO_BASE_COL].unique(), key="selected_sdi")
+        
+        retencion = df_ret[df_ret[SALARIO_BASE_COL] == selected_sdi][RETENCION_COL].values
+        retencion = retencion[0] if len(retencion) > 0 else 0  
+                    
         st.markdown("**Requerido*")
 
         submit_button = st.form_submit_button(label="Registrar")
@@ -235,8 +230,10 @@ def app():
                 total_uno += bono                
             base_isr = round((salario_base + prem_asis + prem_punt) * total_dias + ((he / 2) + dia_festivo + bono + (vacaciones * dias_finiquito)),2) 
             total = round(total_uno + total_dos + total_tres + he, 2)
-
-            isr_calculado = calcular_isr(base_isr)        
+      
+            isr_calculado = calcular_isr(base_isr) 
+            retencion_dias = round((retencion/7) * total_dias, 2)
+            deducciones = isr_calculado + infonavit + prestamo + retencion_dias
 
             empleado_data = pd.DataFrame(
                 [
@@ -297,15 +294,15 @@ def app():
                         "SUELDO COTIZACIÓN S/F TRES EVENTOS ": sueldo_cotizacion3 * total_dias_t3,
                        
                         "SUELDO POR COBRAR TRES EVENTOS": total_tres,
-
+                        "EFECTIVO": efectivo,
                         "TOTAL DE LA NOMINA": total,
                         "BASE ISR": base_isr,
                         "ISR": isr_calculado,
                         "INFONAVIT": infonavit,
                         "PRESTAMO": prestamo,
-                        "IMSS": imss,
-                        "TOTAL A PAGAR": total - isr_calculado - infonavit - prestamo - imss,
-
+                        "IMSS": retencion_dias,
+                        "TOTAL A PAGAR": total - deducciones ,
+                        "TOTAL SIN DEDUCCIONES": total,
                         "OBSERVACIONES": observaciones,
                     }
                 ]
@@ -320,59 +317,72 @@ def app():
                     {
                         "BODEGA": bodega,
                         "EVENTO": evento,
-                        "PERIODO TRABAJADO": f"{inicio.strftime('%Y-%m-%d')} al {fin.strftime('%Y-%m-%d')}",
-                        "NOMBRE COMPLETO ": nombre_empleado,
-                        "ESTATUS DE NÓMINA": estatus_nomina,
-                        "ALTA DEL SEGURO SOCIAL ": alta_seguro,                        
-                        "HORARIO": horario,  
-                        "HORAS EXTRAS AUTORIZADAS": horas_extra,
-                        "TOTAL DE DÍAS TRABAJADOS": total_dias,
-                        "TOTAL SUELDO": total_uno,                    
-                        "TOTAL DE HORAS EXTRAS": he,
-                        "TOTAL CAPACITACION PROPORCIONADA POR PROVEEDOR": 0, 
-                        "ISR": isr_calculado,
-                        "BANCO": " ",
-                        "CUENTA": " ",
-                        "TARJETA": " ",
-                        "CLABE INTERBANCARIA": " ",
-                        "RFC": " ",
-                        "OBSERVACIONES": observaciones,                      
-                    }
+                        "NOMBRE": nombre_empleado,
+                        "FECHA ALTA": inicio,
+                        "FECHA BAJA": fin,
+                        "SEMANA NOI": " ",
+                        "DIAS FINIQ": dias_finiquito,
+                        "DIAS": total_dias,
+                        "SBC": sueldo_integrado1,
+                        "S.D.": salario_base,
+                        "SUELDO": salario_base * total_dias,                     
+                        "PASIST": prem_asis * total_dias,
+                        "PPUNT": prem_punt * total_dias,
+                        "HRS EXT": he,
+                        "TIME EXT DOBLE": " ",
+                        "PRIMA DOM IMPORTE": prima_dominical1 * total_dias,
+                        "DIA FESTIVO": dia_festivo,
+                        "BONO": bono,
+                        "AGUI DIAS": "15",
+                        "AGUI IMPORTE": aguinaldo * dias_finiquito,
+                        "VAC DIAS": "12",
+                        "VAC IMPORTE": vacaciones * dias_finiquito,
+                        "P.V. %": "25%",
+                        "P.VAC IMPORTE": prima_vacacional * dias_finiquito,
+                        "PERCEPCIÓN TOTAL": total_uno,
+                        "BASE ISR": base_isr,
+                        "IMSS": retencion_dias,
+                        "ISR (SUBSIDIO)": isr_calculado,
+                        "PRESTAMO": prestamo,
+                        "CREDITO INFONAVIT": infonavit,
+                        "DEDUCCIÓN TOTAL": deducciones,
+                        "NOMINA NETA": total - deducciones,
+
+                        "FINIQUITO": round(((fini*dias_finiquito) + (fini2*dias_finiquito2) + (fini3*dias_finiquito3)),2),
+                        "EFECTIVO": efectivo,
+                        "NETO A PAGAR": total - deducciones,
+                        "TOTAL SIN DEDUCCIONES": total,
+                        "STATUS": " ",
+                        "DIFERENCIA": " ",
+                        "COMENTARIOS": " ",
+                    }                       
                 ]
             )
 
             updated_df = pd.concat([df_aux2, nomina_uno_data], ignore_index=True)
 
             conn.update(worksheet="Nómina General", data=updated_df)
-            if total_dias_t2 > 0:
-                nomina_dos_data = pd.DataFrame(
+            
+            nomina_dos_data = pd.DataFrame(
                     [
                         {
                             "BODEGA": bodega,
                             "EVENTO": evento,
                             "PERIODO TRABAJADO": f"{inicio.strftime('%Y-%m-%d')} al {fin.strftime('%Y-%m-%d')}",
-                            "NOMBRE COMPLETO": nombre_empleado,
-                            "ESTATUS DE NÓMINA": estatus_nomina,
-                            "ALTA DEL SEGURO SOCIAL": alta_seguro,                        
-                            "HORARIO": horario,  
-                            "HORAS EXTRAS AUTORIZADAS": horas_extra,
-                            "TOTAL DE DÍAS DOBLES TRABAJADOS": total_dias_t2,
-                            "TOTAL SUELDO": total_dos,                    
-                            "TOTAL DE HORAS EXTRAS": he,
-                            "TOTAL CAPACITACION PROPORCIONADA POR PROVEEDOR": 0, 
-                            "BANCO": " ",
-                            "CUENTA": " ",
-                            "TARJETA": " ",
-                            "CLABE INTERBANCARIA": " ",
-                            "RFC": " ",
-                            "OBSERVACIONES": observaciones,                      
+                            "NOMBRE COMPLETO": nombre_empleado,    
+                            "PRESTAMO": prestamo,   
+                            "NÓMINA": total,
+                            "FINIQUITO": round(((fini*dias_finiquito) + (fini2*dias_finiquito2) + (fini3*dias_finiquito3)),2),
+                            "EFECTIVO": efectivo,    
+                            "BONOS": bono,  
+                            "NETO A PAGAR": total - deducciones,                                                       
                         }
                     ]
-                )
+                )               
 
-                updated_df = pd.concat([df_aux3, nomina_dos_data], ignore_index=True)
+            updated_df = pd.concat([df_aux3, nomina_dos_data], ignore_index=True)
 
-                conn.update(worksheet="Nómina Doble Turno", data=updated_df)
+            conn.update(worksheet="Nómina Doble Turno", data=updated_df)
 
             st.success(f"Datos de {nombre_empleado} registrados correctamente.")
     with st.expander("Nóminas"):    

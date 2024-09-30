@@ -7,11 +7,15 @@ def calcular_deduccion_imss(sdn, dias_trabajados, prima_riesgo):
     uma = 108.57  # Unidad de Medida y Actualización 2024
     sdi = sdn * factor_integracion
     
+
+    
     #calcular cuotas obrero patronales
-    especie_dinero = sbc * (0.63934/100)* dias_trabajados / 30
-    pres_en_especie = dias_mes * (uma * 3) * (20.4 / 100)
-    excedente = (sdi - 3 * uma) *  dias_mes * (1.1 / 100) if sdi <= 3 * uma else 0
-    gas_med_pen = sbc * (3.8 / 100) * dias_trabajados / 30 
+    cuota_fija = uma * dias_trabajados * (20.4/100)
+    prestaciones = sdi * dias_mes *  ((0.7/100)+(0.25/100)) if sdn <= (uma * 3) else sdi * dias_mes * (0.7/100)
+    excedente = (sdi - uma * 3) * dias_mes * (1.1/100)) if sdi > (uma * 3) else 0
+    gast_med_pen =  sdi * dias_mes * ((1.05/100) + (0.375/100)) if E13 <= F4 else F13 * C13 * K10
+
+
     
 
 def app():

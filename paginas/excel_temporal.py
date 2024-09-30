@@ -124,7 +124,7 @@ def app():
             if  evento['total_dias_t3'] == 0:
                 salario_base_tres = 0
 
-            if  evento['dias_finiquito'] == 0:
+            if evento['dias_finiquito'] == 0:
                 fini1 = 0
             if evento['dias_finiquito2'] == 0:
                 fini2 = 0
@@ -147,12 +147,13 @@ def app():
                 total_uno += bono
             else:
                 bono = 0
-            
-            base_isr = round((salario_base + prem_asis + prem_punt) * total_dias + ((he / 2) + dia_festivo + bono + (vacaciones * dias_finiquito)),2) 
+                 
+            base_isr = round((salario_base + prem_asis + prem_punt) * evento['dias_trabajados'] + ((he / 2) + dia_festivo + bono + (vacaciones * evento['dias_finiquito'])),2) 
             total = round(total_uno + total_dos + total_tres + he, 2)
             
             isr_calculado = calcular_isr(base_isr)
-            deducciones = round(evento['infonavit'] + evento['prestamo'] + evento['imss'] + isr_calculado, 2)
+            retencion_dias = round((evento['retencion']/7) * evento['dias_trabajados'], 2)
+            deducciones = round(evento['infonavit'] + evento['prestamo'] + retencion_dias + isr_calculado, 2)
             
             
 
@@ -221,14 +222,15 @@ def app():
                 "SUELDO POR COBRAR TRES EVENTOS": total_tres,
                 
                 "TOTAL DE LA NOMINA": total,
+                "EFECTIVO": efectivo,
                 "BASE ISR": base_isr,
                 "ISR": isr_calculado,
                 "INFONAVIT": infonavit,
                 "PRESTAMO": prestamo,
-                "IMSS": imss,
+                "IMSS": retencion_dias,
                 "DEDUCCIONES": deducciones,
-                "TOTAL A PAGAR": total - isr_calculado - infonavit - prestamo - imss,
-
+                "TOTAL A PAGAR": total - deducciones + evento['efectivo'],
+                "TOTAL SIN DEDUCCIONES": total,
                 'OBSERVACIONES': evento['observaciones'],
             })
 
@@ -240,6 +242,7 @@ def app():
 
     df_aux = conn.read(worksheet="Datos", usecols=list(range(10)), ttl=5)
     df_aux = df_aux.dropna(how="all")
+    df_ret = conn.read(worksheet="Retención", usecols=[0, 1], ttl=5).dropna(how="all")
 
     NOMBRES = df_aux.iloc[:, 0].dropna().tolist()
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
@@ -250,6 +253,16 @@ def app():
     HORARIO = ["9 A 4", "2 A 9", "COORDINACIÓN"]
     SEGURO = ["FINIQUITO", "NOMINA"]
     NOMINA = ["FINIQUITO", "CORTE"]
+    column_names = list(df_ret.columns)
+    SALARIO_BASE_COL = column_names[0]  # First column
+    RETENCION_COL = column_names[1] 
+
+    if len(df_ret.columns) >= 2:
+        SALARIO_BASE_COL = df_ret.columns[0]
+        RETENCION_COL = df_ret.columns[1]
+    else:
+        st.error("El DataFrame 'Retención' no tiene suficientes columnas.")
+        st.stop()
 
     with st.form(key="empleado_form"):
         
@@ -263,6 +276,7 @@ def app():
             total_dias = st.number_input(label="Total de días trabajados*", min_value=1, max_value=21, key="total_dias_1")
             dias_finiquito = st.number_input(label="Días Finiquito 1 Turno", min_value=0, max_value=21, key="dias_finiquito_1")
             dia_festivos_c = st.checkbox(label="Día festivo")
+            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)  
         with c2:
             bodega = st.selectbox("Bodega*", options=BODEGA)
             nombre_empleado = st.selectbox("Nombre completo", options=NOMBRES)
@@ -270,8 +284,9 @@ def app():
             alta_seguro = st.selectbox("Alta del seguro social", options=SEGURO)
             st.write("Segundo evento")
             total_dias_t2 = st.number_input(label="Días trabajados con doble evento", min_value=0, max_value=21, key="total_dias_2")
-            dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")     
-            dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS)            
+            dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")   
+            efectivo = st.number_input(label="Efectivo", min_value=0, key="efectivo")   
+                      
         with c3:
             zona = st.selectbox("Zona*", options=ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
@@ -292,7 +307,10 @@ def app():
         with c5:
             prestamo = st.number_input(label="Prestamo", min_value=0, key="prestamo")
         with c6:            
-            imss = st.number_input(label="IMSS", min_value=0, key="imss")      
+            selected_sdi = st.selectbox(label="Seleccione su salario base", options=df_ret[SALARIO_BASE_COL].unique(), key="selected_sdi")
+        
+        retencion = df_ret[df_ret[SALARIO_BASE_COL] == selected_sdi][RETENCION_COL].values
+        retencion = retencion[0] if len(retencion) > 0 else 0      
             
         st.markdown("**Requerido*")
         submit_button = st.form_submit_button(label="Agregar evento")
@@ -325,7 +343,8 @@ def app():
                 'bono': bono,
                 'infonavit': infonavit,
                 'prestamo': prestamo,
-                'imss': imss,
+                'efectivo': efectivo,
+                'retencion': retencion,
                 
             })
         

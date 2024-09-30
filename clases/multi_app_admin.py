@@ -67,9 +67,9 @@ class MultiApp:
                 }
             )
         app_modules = {
-            'Nómina GoogleSheet': 'paginas.formulario',
+            'Nómina GoogleSheet': 'paginas.calculadora_nomina',
             'Nómina Temporal': 'paginas.excel_temporal',
-            'Excel': 'paginas.pruebas'            
+            'Excel': 'paginas.lector_excel',            
         }
         if app in app_modules:
             module = importlib.import_module(app_modules[app])
