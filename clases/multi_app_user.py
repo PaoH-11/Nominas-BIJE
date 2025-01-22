@@ -2,10 +2,9 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import importlib
 
-
 class MultiApp2:
-
-    def __init__(self):  # Asegúrate de tener dos guiones bajos al inicio y al final
+    # Asegúrate de tener dos guiones bajos al inicio y al final
+    def __init__(self):  
         self.apps = []
 
     def add_app(self, title, function):

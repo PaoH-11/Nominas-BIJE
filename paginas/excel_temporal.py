@@ -2,98 +2,10 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from streamlit_gsheets import GSheetsConnection
+from data.datos import SALARIO_BASE, tarifas_isr
+from estructura.proceso_eventos import obtener_salario_y_premio, calcular_finiquito, calcular_isr
 
-SALARIO_BASE = [265.6,  #INTERIOR DEMOSTRADOR UN EVENTO     [0]
-                455,    #INTERIOR DEMOSTRADOR DOS EVENTOS   [1]
-                374.89, #FRONTERA DEMOSTRADOR UN EVENTO     [2]
-                594,    #FRONTERA DEMOSTRADOR DOS EVENTOS   [3]
-                298.2,  #ESPECIAL DEMOSTRADOR UN EVENTO     [4]
-                510,    #ESPECIAL DEMOSTRADOR DOS EVENTOS   [5]
-                304,    #INTERIOR DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [6]
-                326,    #ESPECIAL DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [7]
-                205.27, #INTERIOR COORDINADOR UN EVENTO     [8]
-                468.00, #INTERIOR COORDINADOR TRES EVENTOS  [9]
-                455,    #INTERIOR COORDINADOR Y DEMOSTRADOR UN EVENTO [10]
-                284,    #FRONTERA COORDINADOR UN EVENTO     [11]
-                580,    #FRONTERA COORDINADOR Y DEMOSTRADOR UN EVENTO [12]
-                209,    #ESPECIAL COORDINADOR UN EVENTO     [13]
-                507,    #ESPECIAL COORDINADOR Y DEMOSTRADOR UN EVENTO [14]
-                228,    #INTERIOR DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [15]
-                239,    #ESPECIAL DEMOSTRADOR JOYERÍA Y DEGUSTACIÓN UN EVENTO [16]                    
-                ]
-tarifas_isr = [
-    {"limite_inferior": 0.01, "limite_superior": 171.78, "cuota_fija": 0.00, "porcentaje": 0.0192},
-    {"limite_inferior": 171.78, "limite_superior": 1458.03, "cuota_fija": 3.29, "porcentaje": 0.0640},
-    {"limite_inferior": 1458.03, "limite_superior": 2562.35, "cuota_fija": 85.61, "porcentaje": 0.1088},
-    {"limite_inferior": 2562.35, "limite_superior": 2978.64, "cuota_fija": 205.80, "porcentaje": 0.16},
-    {"limite_inferior": 2978.64, "limite_superior": 3566.22, "cuota_fija": 272.37, "porcentaje": 0.1792},
-    {"limite_inferior": 3566.22, "limite_superior": 7192.64, "cuota_fija": 377.65, "porcentaje": 0.2136},
-    {"limite_inferior": 7192.64, "limite_superior": 11336.57, "cuota_fija": 1152.27, "porcentaje": 0.2352},
-    {"limite_inferior": 11336.57, "limite_superior": 21643.30, "cuota_fija": 2126.95, "porcentaje": 0.30},
-    {"limite_inferior": 21643.30, "limite_superior": 28857.78, "cuota_fija": 5218.92, "porcentaje": 0.32},
-    {"limite_inferior": 28857.78, "limite_superior": 86573.34, "cuota_fija": 7527.59, "porcentaje": 0.34},
-    {"limite_inferior": 86573.34, "limite_superior": float("inf"), "cuota_fija": 27150.83, "porcentaje": 0.35}
-]
 def app():
-    # Función para calcular la nómina
-
-    def obtener_salario_y_premio(puesto, zona, total_dias_t2):
-        if puesto == 'DEMOSTRADOR':
-            if zona == 'INTERIOR':
-                return SALARIO_BASE[0], SALARIO_BASE[1], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
-            elif zona == 'FRONTERA':
-                if total_dias_t2 >= 1:
-                    return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, True, False
-                else:
-                    return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, False, False
-            elif zona == 'ESPECIAL':
-                return SALARIO_BASE[4], SALARIO_BASE[5], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
-            elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[6], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
-            elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[7], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
-        elif puesto == 'COORDINADOR':
-            if zona == 'INTERIOR':
-                return SALARIO_BASE[8], SALARIO_BASE[8], SALARIO_BASE[8], 0, 0.1, 0, 0.1, True, True, True
-            elif zona == 'FRONTERA':
-                return SALARIO_BASE[11], SALARIO_BASE[11], SALARIO_BASE[11], 0, 0, 0, 0, False, False, False
-            elif zona == 'ESPECIAL':
-                return SALARIO_BASE[13], SALARIO_BASE[13], SALARIO_BASE[13], 0.1, 0.1, 0.1, 0.1, True, True, True
-            elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[15], SALARIO_BASE[15], SALARIO_BASE[15], 0.1, 0.1, 0.1, 0.1, True, True, True
-            elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-                return SALARIO_BASE[16], SALARIO_BASE[16], SALARIO_BASE[16], 0.1, 0.1, 0.1, 0.1, True, True, True
-        elif puesto == 'COORDINADOR Y DEMOSTRADOR':
-            if zona == 'INTERIOR':
-                return SALARIO_BASE[10], 0, 0, 0.1, 0.1, 0, 0, True, False, False
-            elif zona == 'FRONTERA':
-                return SALARIO_BASE[12], 0, 0, 0.1, 0.1, 0, 0, True, False, False
-            elif zona == 'ESPECIAL':
-                return SALARIO_BASE[14], 0, 0, 0.1, 0.1, 0, 0, True, False, False
-    
-        # Si no se encuentra una combinación válida, devolver valores por defecto
-        return 0, 0, 0, 0, 0, 0, 0, False, False, False
-        
-    def calcular_finiquito(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
-    # Función para calcular el finiquito con base en las reglas proporcionadas
-        aguinaldo = round((salario_base * (15 / 365)), 2)
-        vacaciones = round((salario_base * (12 / 365)), 2)
-        prima_vacacional = round(vacaciones * 0.25, 2)  
-        prima_dominical = round(((1 * 0.25) / 7) * salario_base, 2) if incluir_prima_dominical else 0
-        prem_asis = round(salario_base * prem_punt_pct, 2)
-        prem_punt = round(salario_base * prem_asis_pct, 2)
-        sueldo_integrado = round(salario_base + aguinaldo + vacaciones + prima_vacacional + prima_dominical, 2)   
-        fini = round((aguinaldo + vacaciones + prima_vacacional), 2)
-
-        return aguinaldo, vacaciones, prima_vacacional, prima_dominical, prem_asis, prem_punt, sueldo_integrado, fini
-    
-    def calcular_isr(base_isr):
-        for tarifa in tarifas_isr:
-            if tarifa["limite_inferior"] <= base_isr <= tarifa["limite_superior"]:
-                isr = tarifa["cuota_fija"] + (base_isr - tarifa["limite_inferior"]) * tarifa["porcentaje"]
-                return round(isr, 2)        
-        return 0.0
-    
     def calcular_nomina(eventos):
         resultados = []
         for evento in eventos:
@@ -147,7 +59,7 @@ def app():
                 total_uno += bono
             else:
                 bono = 0
-                 
+                    
             base_isr = round((salario_base + prem_asis + prem_punt) * evento['dias_trabajados'] + ((he / 2) + dia_festivo + bono + (vacaciones * evento['dias_finiquito'])),2) 
             total = round(total_uno + total_dos + total_tres + he, 2)
             
@@ -372,6 +284,8 @@ def app():
         st.write("Cálculo de nómina completado:")
         with st.expander("Ver nómina"):
             st.write(df_nomina) 
+
+        
 
 # Llamada a la función app para ejecutar la aplicación
 if __name__ == "__main__":

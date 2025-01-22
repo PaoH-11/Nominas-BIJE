@@ -1,92 +1,21 @@
 import streamlit as st
+import mysql.connector
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
+from estructura.proceso_calculadora import calcular_nomina, calcular_isr, obtener_salario_y_premio
 st.markdown(
     """
     <style>
-    /* Estilo para el fondo de la aplicación con degradado */
+    /* Degradado de fondo*/
     .stApp {
         background-image: radial-gradient(circle at 34.8%, #bad4ee 0, #97bee6 25%, #70a8dd 50%, #4192d4 75%, #007dcc 100%);
         height: 100vh;
         padding: 0;
-    }
-    
+    }    
     </style>
     """,
     unsafe_allow_html=True
-)
-SALARIO_BASE = [265.6, 455, 374.89, 594, 298.2, 510, 304, 326, 205.27, 468.00, 455, 284, 580, 209, 507, 228, 239]
-
-tarifas_isr = [
-    {"limite_inferior": 0.01, "limite_superior": 171.78, "cuota_fija": 0.00, "porcentaje": 0.0192},
-    {"limite_inferior": 171.78, "limite_superior": 1458.03, "cuota_fija": 3.29, "porcentaje": 0.0640},
-    {"limite_inferior": 1458.03, "limite_superior": 2562.35, "cuota_fija": 85.61, "porcentaje": 0.1088},
-    {"limite_inferior": 2562.35, "limite_superior": 2978.64, "cuota_fija": 205.80, "porcentaje": 0.16},
-    {"limite_inferior": 2978.64, "limite_superior": 3566.22, "cuota_fija": 272.37, "porcentaje": 0.1792},
-    {"limite_inferior": 3566.22, "limite_superior": 7192.64, "cuota_fija": 377.65, "porcentaje": 0.2136},
-    {"limite_inferior": 7192.64, "limite_superior": 11336.57, "cuota_fija": 1152.27, "porcentaje": 0.2352},
-    {"limite_inferior": 11336.57, "limite_superior": 21643.30, "cuota_fija": 2126.95, "porcentaje": 0.30},
-    {"limite_inferior": 21643.30, "limite_superior": 28857.78, "cuota_fija": 5218.92, "porcentaje": 0.32},
-    {"limite_inferior": 28857.78, "limite_superior": 86573.34, "cuota_fija": 7527.59, "porcentaje": 0.34},
-    {"limite_inferior": 86573.34, "limite_superior": float("inf"), "cuota_fija": 27150.83, "porcentaje": 0.35}
-]
-
-
-# Función para calcular el finiquito
-def calcular_nomina(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
-    aguinaldo = round((salario_base * (15 / 365)), 2)
-    vacaciones = round((salario_base * (12 / 365)), 2)
-    prima_vacacional = round(vacaciones * 0.25, 2)  
-    prima_dominical = round(((1 * 0.25) / 7) * salario_base, 2) if incluir_prima_dominical else 0
-    prem_asis = round(salario_base * prem_punt_pct, 2)
-    prem_punt = round(salario_base * prem_asis_pct, 2)
-    sueldo_integrado = round(salario_base + aguinaldo + vacaciones + prima_vacacional + prima_dominical, 2)
-    fini = round(aguinaldo + vacaciones + prima_vacacional, 2)
- 
-    return aguinaldo, vacaciones, prima_vacacional, prima_dominical, prem_asis, prem_punt, sueldo_integrado, fini
-
-# Función para obtener el salario base y el porcentaje de la prima vacacional según el puesto y la zona
-def calcular_isr(base_isr):
-    for tarifa in tarifas_isr:
-        if tarifa["limite_inferior"] <= base_isr <= tarifa["limite_superior"]:
-            isr = tarifa["cuota_fija"] + (base_isr - tarifa["limite_inferior"]) * tarifa["porcentaje"]
-            return round(isr, 2)        
-    return 0.0
-
-def obtener_salario_y_premio(puesto, zona, total_dias_t2):
-    if puesto == 'DEMOSTRADOR':
-        if zona == 'INTERIOR':
-            return SALARIO_BASE[0], SALARIO_BASE[1], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
-        elif zona == 'FRONTERA':
-            if total_dias_t2 >= 1:
-                return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, True, False
-            elif total_dias_t2 == 0:
-                return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, False, False
-        elif zona == 'ESPECIAL':
-            return SALARIO_BASE[4], SALARIO_BASE[5], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
-        elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[6], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
-        elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[7], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
-    elif puesto == 'COORDINADOR':
-        if zona == 'INTERIOR':
-            return SALARIO_BASE[8], SALARIO_BASE[8], SALARIO_BASE[8], 0, 0.1, 0, 0.1, True, True, True
-        elif zona == 'FRONTERA':
-            return SALARIO_BASE[11], SALARIO_BASE[11], SALARIO_BASE[11], 0, 0, 0, 0, False, False, False
-        elif zona == 'ESPECIAL':
-            return SALARIO_BASE[13], SALARIO_BASE[13], SALARIO_BASE[13], 0.1, 0.1, 0.1, 0.1, True, True, True
-        elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[15], SALARIO_BASE[15], SALARIO_BASE[15], 0.1, 0.1, 0.1, 0.1, True, True, True
-        elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[16], SALARIO_BASE[16], SALARIO_BASE[16], 0.1, 0.1, 0.1, 0.1, True, True, True
-    elif puesto == 'COORDINADOR Y DEMOSTRADOR':
-        if zona == 'INTERIOR':
-            return SALARIO_BASE[10], 0, 0, 0.1, 0.1, 0, 0, True, False, False            
-        elif zona == 'FRONTERA':
-            return SALARIO_BASE[12], 0, 0, 0.1, 0.1, 0, 0, True, False, False
-        elif zona == 'ESPECIAL':
-            return SALARIO_BASE[14], 0, 0, 0.1, 0.1, 0, 0, True, False, False
-        
+)       
 
 def app():
     st.title("CALCULADORA DE NÓMINAS")
@@ -101,20 +30,65 @@ def app():
     """, unsafe_allow_html=True)
 
     st.info('Rellenar los campos requeridos', icon="ℹ️")
-    conn = st.connection("gsheets3", type=GSheetsConnection)
+    # Función para conectar a la base de datos
+    def connect_to_database():
+        try:
+            connection_config = {
+                'host': st.secrets["connections"]["mysql"]["host"],
+                'user': st.secrets["connections"]["mysql"]["username"],
+                'password': st.secrets["connections"]["mysql"]["password"],
+                'database': st.secrets["connections"]["mysql"]["database"],
+                'charset': st.secrets["connections"]["mysql"]["query"]["charset"]
+            }
+            conn = mysql.connector.connect(**connection_config)
+            return conn
+        except mysql.connector.Error as e:
+            st.error(f"Error al conectar a la base de datos: {e}")
+            return None
 
+    # Función para realizar consultas
+    def fetch_data(query, params=None):
+        conn = connect_to_database()
+        if conn is None:
+            return None
+
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            return pd.DataFrame(results)
+        except mysql.connector.Error as e:
+            st.error(f"Error al ejecutar la consulta: {e}")
+            return None
+        finally:
+            conn.close()
+
+    # Mostrar tabla de datos
+    query = "SELECT * FROM salarios"
+    data = fetch_data(query)
+
+    # Obtener valores únicos para la columna 'ZONA'
+    if not data.empty:
+        zonas_unicas = data['zona'].unique().tolist()
+        puestos_unicos = data['puesto'].unique().tolist()
+    else:
+        zonas_unicas = ["Interior", "Exterior", "Especial"]
+        puestos_unicos = ["Demostrador", "Coordinador"]
+
+    #Conexión a Google Sheets
+    conn = st.connection("gsheets3", type=GSheetsConnection)
     df = conn.read(worksheet="Nómina", usecols=list(range(60)), ttl=5).dropna(how="all")
     df_aux = conn.read(worksheet="Datos", usecols=list(range(10)), ttl=5).dropna(how="all")
     df_aux2 = conn.read(worksheet="Nómina General", usecols=list(range(40)), ttl=5).dropna(how="all")
     df_aux3 = conn.read(worksheet="Nómina Doble Turno", usecols=list(range(40)), ttl=5).dropna(how="all")
     df_ret = conn.read(worksheet="Retención", usecols=[0, 1], ttl=5).dropna(how="all")
-
+    #Obtener listas de nombres, eventos, bodegas, puestos y salarios
     NOMBRES = df_aux.iloc[:, 0].dropna().tolist()
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
     BODEGA = df_aux.iloc[:, 2].dropna().tolist()
-    PUESTO = df_aux.iloc[:, 3].dropna().tolist()
+    PUESTO = puestos_unicos
     SALARIOS = df_aux.iloc[:, 4].dropna().tolist() 
-    ZONA = ["INTERIOR", "FRONTERA", "ESPECIAL", "INTERIOR JOYERÍA Y DEGUSTACIÓN", "ESPECIAL JOYERÍA Y DEGUSTACIÓN"]
+    ZONA = zonas_unicas
     HORARIO = ["9 A 4", "2 A 9", "COORDINACIÓN"]
     SEGURO = ["FINIQUITO", "NOMINA", "CORTE"]
     NOMINA = ["FINIQUITO", "CORTE"]
@@ -128,12 +102,11 @@ def app():
     else:
         st.error("El DataFrame 'Retención' no tiene suficientes columnas.")
         st.stop()
-
-    with st.form(key="empleado_form"):
-        
+    #Formulario para ingresar los datos del empleado
+    with st.form(key="empleado_form"):        
         c1, c2, c3 = st.columns(3)
         with c1:
-            puesto = st.selectbox("Puesto*", options=PUESTO)
+            puesto = st.selectbox("Puesto*", PUESTO)
             evento = st.selectbox("Evento*", options=EVENTOS)
             observaciones = st.text_input(label="Observaciones")
             estatus_nomina = st.selectbox("Estatus de la nómina", options=NOMINA)
@@ -152,7 +125,7 @@ def app():
             dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")     
             efectivo = st.number_input(label="Efectivo", min_value=0, key="efectivo")           
         with c3:
-            zona = st.selectbox("Zona*", options=ZONA)
+            zona = st.selectbox("Zona*", ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
             fin = st.date_input(label="Día fin*")
             horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0, key="horas_extra")  
@@ -180,7 +153,7 @@ def app():
         submit_button = st.form_submit_button(label="Registrar")
 
     if submit_button:
-        if puesto == 'DEMOSTRADOR' and total_dias_t3 >= 1:
+        if puesto == 'Demostrador' and total_dias_t3 >= 1:
             st.warning("Demostrador no puede tener tres eventos")
             st.stop()            
         else:

@@ -2,6 +2,7 @@ import streamlit as st
 from fpdf import FPDF
 import os
 
+
 # Definir una constante para el nombre del archivo PDF
 PDF_FILENAME = "nomina_personalizada.pdf"
 

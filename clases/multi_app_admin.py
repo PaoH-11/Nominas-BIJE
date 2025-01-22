@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import importlib
+import mysql.connector
 
 
 def initialize_session_state():
@@ -24,16 +25,14 @@ class MultiApp:
 
     @staticmethod
     def run_admin():
-        
         st.set_page_config(
             page_title="MAVEN",
             page_icon="🗃",
             layout="wide",
             initial_sidebar_state="expanded",
-            
         )
-        st.sidebar.image("data/logo.jpg")
-        
+        st.sidebar.image("data/logo_maven_azul_s.png")
+
         if 'username' in st.session_state:
             st.sidebar.markdown(
                 f"""
@@ -45,18 +44,11 @@ class MultiApp:
             )
 
         with st.sidebar:
-            st.markdown(
-                """
-                <div style="background-color: ##154c79; border-radius: 5px; text-align: left; padding-left: 15px;">
-                    <span style="color: #F0602C; font-size: 24px;">Menú</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            
             app = option_menu(
                 menu_title=False,
-                options=["Nómina GoogleSheet","Nómina Temporal","Excel"],
-                 icons=["calculator", "calculator", "calculator", "calculator"],
+                options=["Nómina GoogleSheet","Nómina Temporal","Excel", "Salarios"],
+                icons=["calculator", "calculator", "calculator", "calculator"],
                 menu_icon="heart-eyes-fill",
                 default_index=0,
                 styles={
@@ -66,10 +58,13 @@ class MultiApp:
                     "nav-link-selected": {"background-color": "#475570"},
                 }
             )
+
+        # Módulos de aplicaciones
         app_modules = {
             'Nómina GoogleSheet': 'paginas.calculadora_nomina',
             'Nómina Temporal': 'paginas.excel_temporal',
-            'Excel': 'paginas.lector_excel',            
+            'Excel': 'paginas.lector_excel',
+            'Salarios': 'paginas.asignacion_sueldos',  
         }
         if app in app_modules:
             module = importlib.import_module(app_modules[app])
@@ -87,3 +82,63 @@ class MultiApp:
                 st.rerun()
 
         logout()
+
+
+def verify_credentials(username, password):
+    conn = None
+    try:
+        # Conectar a MySQL usando los secrets de Streamlit
+        connection_config = {
+            'host': st.secrets["connections"]["mysql"]["host"],
+            'user': st.secrets["connections"]["mysql"]["username"],
+            'password': st.secrets["connections"]["mysql"]["password"],
+            'database': st.secrets["connections"]["mysql"]["database"],
+            'charset': st.secrets["connections"]["mysql"]["query"]["charset"]
+        }
+        
+        conn = mysql.connector.connect(**connection_config)
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM login WHERE usuario = %s AND clave = %s", (username, password))
+        row = cursor.fetchone()
+        
+        if row:
+            st.session_state.logged_in = True
+            st.session_state.username = row['nombre']
+            st.session_state.rol = row['rol']
+            return True
+        else:
+            return False
+    except mysql.connector.Error as e:
+        st.error(f"Error al verificar las credenciales: {e}")
+        return False
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def login_page():
+    st.markdown("<h1>INICIAR SESIÓN</h1>", unsafe_allow_html=True)
+    username = st.text_input("Usuario")
+    password = st.text_input("Contraseña", type="password")
+
+    if st.button("Iniciar Sesión"):
+        if verify_credentials(username, password):
+            st.success("Inicio de sesión exitoso!")
+            st.experimental_rerun()
+        else:
+            st.error("Usuario o contraseña incorrectos")
+
+
+def main():
+    initialize_session_state()
+    if st.session_state.logged_in:
+        if st.session_state.rol == "Admin":
+            MultiApp.run_admin()
+        else:
+            st.error("No tienes permisos para acceder.")
+    else:
+        login_page()
+
+
+if __name__ == "__main__":
+    main()
