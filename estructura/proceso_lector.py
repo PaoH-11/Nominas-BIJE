@@ -1,6 +1,40 @@
+import streamlit as st
+import mysql.connector
 import pandas as pd
 import io
 from data.datos import SALARIO_BASE, tarifas_isr
+
+# Función para conectar a la base de datos
+def connect_to_database():
+    try:
+        connection_config = {
+            'host': st.secrets["connections"]["mysql"]["host"],
+            'user': st.secrets["connections"]["mysql"]["username"],
+            'password': st.secrets["connections"]["mysql"]["password"],
+            'database': st.secrets["connections"]["mysql"]["database"],
+            'charset': st.secrets["connections"]["mysql"]["query"]["charset"]
+        }
+        conn = mysql.connector.connect(**connection_config)
+        return conn
+    except mysql.connector.Error as e:
+        st.error(f"Error al conectar a la base de datos: {e}")
+        return None
+
+# Función para realizar consultas
+def fetch_data(query, params=None):
+    conn = connect_to_database()
+    if conn is None:
+        return None
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        return pd.DataFrame(results)
+    except mysql.connector.Error as e:
+        #st.error(f"Error al ejecutar la consulta: {e}")
+        return None
+    finally:
+        conn.close()
 
 # Función para calcular el finiquito
 def calcular_finiquito(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
@@ -21,6 +55,7 @@ def calcular_isr(base_isr):
             isr = tarifa["cuota_fija"] + (base_isr - tarifa["limite_inferior"]) * tarifa["porcentaje"]
             return round(isr, 2)        
     return 0.0
+
 # Función para obtener el salario base y el porcentaje de la prima vacacional según el puesto y la zona
 def calcular_retencion(sdi, df_ret):
     # Definir los nombres de las columnas
@@ -35,39 +70,44 @@ def calcular_retencion(sdi, df_ret):
         if sdi <= row[SALARIO_BASE_COL]:
             return row[RETENCION_COL]
 
+# Función para obtener el salario base y premios según el puesto y la zona
 def obtener_salario_y_premio(puesto, zona, total_dias_t2):
-    if puesto == 'DEMOSTRADOR':
-        if zona == 'INTERIOR':
-            return SALARIO_BASE[0], SALARIO_BASE[1], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
-        elif zona == 'FRONTERA':
-            if total_dias_t2 >= 1:
-                return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, True, False
-            else:
-                return SALARIO_BASE[2], SALARIO_BASE[3], 0, 0.068, 0.068, 0.1, 0.1, False, False, False
-        elif zona == 'ESPECIAL':
-            return SALARIO_BASE[4], SALARIO_BASE[5], 0, 0.1, 0.1, 0.1, 0.1, True, True, False
-        elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[6], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
-        elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[7], 0, 0, 0.1, 0.1, 0.1, 0.1, True, False, False
-    elif puesto == 'COORDINADOR':
-        if zona == 'INTERIOR':
-            return SALARIO_BASE[8], SALARIO_BASE[8], SALARIO_BASE[8], 0, 0.1, 0, 0.1, True, True, True
-        elif zona == 'FRONTERA':
-            return SALARIO_BASE[11], SALARIO_BASE[11], SALARIO_BASE[11], 0, 0, 0, 0, False, False, False
-        elif zona == 'ESPECIAL':
-            return SALARIO_BASE[13], SALARIO_BASE[13], SALARIO_BASE[13], 0.1, 0.1, 0.1, 0.1, True, True, True
-        elif zona == 'INTERIOR JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[15], SALARIO_BASE[15], SALARIO_BASE[15], 0.1, 0.1, 0.1, 0.1, True, True, True
-        elif zona == 'ESPECIAL JOYERÍA Y DEGUSTACIÓN':
-            return SALARIO_BASE[16], SALARIO_BASE[16], SALARIO_BASE[16], 0.1, 0.1, 0.1, 0.1, True, True, True
-    elif puesto == 'COORDINADOR Y DEMOSTRADOR':
-        if zona == 'INTERIOR':
-            return SALARIO_BASE[10], 0, 0, 0.1, 0.1, 0, 0, True, False, False
-        elif zona == 'FRONTERA':
-            return SALARIO_BASE[12], 0, 0, 0.1, 0.1, 0, 0, True, False, False
-        elif zona == 'ESPECIAL':
-            return SALARIO_BASE[14], 0, 0, 0.1, 0.1, 0, 0, True, False, False
+    conn = connect_to_database()
+    if conn is None:
+        st.error("No se pudo conectar a la base de datos.")
+        return None
+    
+    try:
+        cursor = conn.cursor()
+        # Consulta el salario base, premio de asistencia y premio dominical según el puesto y la zona
+        query = """
+            SELECT salario_base, salario_base2, salario_base3, p_asis, p_punt, p_dom
+            FROM salarios
+            WHERE puesto = %s AND zona = %s
+        """
+        cursor.execute(query, (puesto, zona))
+        resultado = cursor.fetchone()
+        
+        if not resultado:
+            raise ValueError(f"No se encontraron datos para el puesto '{puesto}' y la zona '{zona}'")
+
+        salario_base, salario_base2, salario_base3, p_asis, p_punt, p_dom = resultado
+        
+        #PRIMERAS TRES VARIABLES SON SALARIOS BASE (las que estan en cero  son para el tercer evento)
+        #LAS SIGUIENTES CUATRO SON PREMIOS DE ASISTENCIA Y PUNTUALIDAD
+        #ULTIMA VARIABLE ES PARA SABER SI SE INCLUYE PRIMA DOMINICAL USANDO TODAS EN TRUE YA QUE AL ASIGAR SALARIOS SE INDICA SI TIENEN O NO   
+        if puesto == 'DEMOSTRADOR':
+            return salario_base, salario_base2, salario_base3, p_asis, p_punt, 0.1, 0.1,  p_dom, True, False
+        elif puesto == 'COORDINADOR':
+            return salario_base, salario_base2, salario_base3, p_asis, p_punt, 0.1, 0.1,  p_dom, True, True
+        elif puesto == 'COORDINADOR Y DEMOSTRADOR':
+            return salario_base, salario_base2, salario_base3, p_asis, p_punt, 0.1, 0.1,  p_dom, False, False
+        else:
+            raise ValueError(f"Puesto '{puesto}' no reconocido")
+    except mysql.connector.Error as e:
+        st.error(f"Error al ejecutar la consulta: {e}")
+    finally:
+        conn.close()
     
     # Si no se encuentra una combinación válida, devolver valores por defecto
     return 0, 0, 0, 0, 0, 0, 0, False, False, False
@@ -266,7 +306,7 @@ def procesar_datos(df_empleados, df_ret):
 
     return df_resultado, df_nomina_uno
     
-    # Generar archivo Excel para descargar
+# Generar archivo Excel para descargar
 def to_excel_con_sheets(df1, df2):
     if not isinstance(df1, pd.DataFrame) or not isinstance(df2, pd.DataFrame):
         raise ValueError("Se esperaban objetos DataFrame, pero se recibió un tipo incorrecto.")

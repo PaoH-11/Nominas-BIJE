@@ -3,6 +3,7 @@ import pandas as pd
 from io import BytesIO
 from streamlit_gsheets import GSheetsConnection
 from data.datos import SALARIO_BASE, tarifas_isr
+import mysql.connector
 from estructura.proceso_eventos import obtener_salario_y_premio, calcular_finiquito, calcular_isr
 
 def app():
@@ -147,7 +148,52 @@ def app():
             })
 
         return resultados
-    
+    # Función para conectar a la base de datos
+    def connect_to_database():
+        try:
+            connection_config = {
+                'host': st.secrets["connections"]["mysql"]["host"],
+                'user': st.secrets["connections"]["mysql"]["username"],
+                'password': st.secrets["connections"]["mysql"]["password"],
+                'database': st.secrets["connections"]["mysql"]["database"],
+                'charset': st.secrets["connections"]["mysql"]["query"]["charset"]
+            }
+            conn = mysql.connector.connect(**connection_config)
+            return conn
+        except mysql.connector.Error as e:
+            st.error(f"Error al conectar a la base de datos: {e}")
+            return None
+
+    # Función para realizar consultas
+    def fetch_data(query, params=None):
+        conn = connect_to_database()
+        if conn is None:
+            return None
+
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            return pd.DataFrame(results)
+        except mysql.connector.Error as e:
+            st.error(f"Error al ejecutar la consulta: {e}")
+            return None
+        finally:
+            conn.close()
+
+    # Mostrar tabla de datos
+    query = "SELECT * FROM salarios"
+    data = fetch_data(query)
+
+    # Obtener valores únicos para la columna 'ZONA'
+    if not data.empty:
+        zonas_unicas = data['zona'].unique().tolist()
+        puestos_unicos = data['puesto'].unique().tolist()
+    else:
+        zonas_unicas = ["Interior", "Exterior", "Especial"]
+        puestos_unicos = ["Demostrador", "Coordinador"]
+
+
     # Interfaz de Streamlit
     st.title("CALCULADORA DE NÓMINAS")   
     conn = st.connection("gsheets3", type=GSheetsConnection)
@@ -159,9 +205,9 @@ def app():
     NOMBRES = df_aux.iloc[:, 0].dropna().tolist()
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
     BODEGA = df_aux.iloc[:, 2].dropna().tolist()
-    PUESTO = df_aux.iloc[:, 3].dropna().tolist()
+    PUESTO = puestos_unicos
     SALARIOS = df_aux.iloc[:, 4].dropna().tolist()
-    ZONA = ["INTERIOR", "FRONTERA", "ESPECIAL", "INTERIOR JOYERÍA Y DEGUSTACIÓN", "ESPECIAL JOYERÍA Y DEGUSTACIÓN"]
+    ZONA = zonas_unicas
     HORARIO = ["9 A 4", "2 A 9", "COORDINACIÓN"]
     SEGURO = ["FINIQUITO", "NOMINA"]
     NOMINA = ["FINIQUITO", "CORTE"]
@@ -180,7 +226,7 @@ def app():
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            puesto = st.selectbox("Puesto*", options=PUESTO)
+            puesto = st.selectbox("Puesto*", PUESTO)
             evento = st.selectbox("Evento*", options=EVENTOS)
             observaciones = st.text_input(label="Observaciones")
             estatus_nomina = st.selectbox("Estatus de la nómina", options=NOMINA)
@@ -200,7 +246,7 @@ def app():
             efectivo = st.number_input(label="Efectivo", min_value=0, key="efectivo")   
                       
         with c3:
-            zona = st.selectbox("Zona*", options=ZONA)
+            zona = st.selectbox("Zona*", ZONA)
             horario = st.selectbox("Horario", options=HORARIO)
             fin = st.date_input(label="Día fin*")
             horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0, key="horas_extra")  

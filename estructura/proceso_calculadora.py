@@ -4,7 +4,6 @@ import mysql.connector
 import io
 from data.datos import SALARIO_BASE, tarifas_isr
 
-
 # Función para conectar a la base de datos
 def connect_to_database():
     try:
@@ -73,7 +72,7 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
         cursor = conn.cursor()
         # Consulta el salario base, premio de asistencia y premio dominical según el puesto y la zona
         query = """
-            SELECT salario_base, p_asis, p_dom
+            SELECT salario_base, salario_base2, salario_base3, p_asis, p_punt, p_dom
             FROM salarios
             WHERE puesto = %s AND zona = %s
         """
@@ -83,18 +82,17 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
         if not resultado:
             raise ValueError(f"No se encontraron datos para el puesto '{puesto}' y la zona '{zona}'")
 
-        salario_base, p_asis, p_dom = resultado
+        salario_base, salario_base2, salario_base3, p_asis, p_punt, p_dom = resultado
         
-        # Define reglas adicionales según el puesto y zona
-        incluir_prima_dominical = zona in ['Interior','Frontera', 'Especial']
-        incluir_prima_vacacional = puesto == 'Coordinador'
-        
-        if puesto == 'Demostrador':
-            return salario_base, salario_base, 0, p_asis, p_dom, 0.1, 0.1, True, True, False
-        elif puesto == 'Coordinador':
-            return salario_base, salario_base, salario_base, p_asis, p_dom, 0.1, 0.1, incluir_prima_dominical, True, True
-        elif puesto == 'Coordinador y Demostrador':
-            return salario_base, 0, 0, p_asis, p_dom, 0.1, 0.1, incluir_prima_dominical, False, False
+        #PRIMERAS TRES VARIABLES SON SALARIOS BASE (las que estan en cero  son para el tercer evento)
+        #LAS SIGUIENTES CUATRO SON PREMIOS DE ASISTENCIA Y PUNTUALIDAD
+        #ULTIMA VARIABLE ES PARA SABER SI SE INCLUYE PRIMA DOMINICAL USANDO TODAS EN TRUE YA QUE AL ASIGAR SALARIOS SE INDICA SI TIENEN O NO   
+        if puesto == 'DEMOSTRADOR':
+            return salario_base, salario_base2, salario_base3, p_asis, p_punt, 0.1, 0.1,  p_dom, True, False
+        elif puesto == 'COORDINADOR':
+            return salario_base, salario_base2, salario_base3, p_asis, p_punt, 0.1, 0.1,  p_dom, True, True
+        elif puesto == 'COORDINADOR Y DEMOSTRADOR':
+            return salario_base, salario_base2, salario_base3, p_asis, p_punt, 0.1, 0.1,  p_dom, False, False
         else:
             raise ValueError(f"Puesto '{puesto}' no reconocido")
     except mysql.connector.Error as e:

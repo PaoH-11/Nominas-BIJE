@@ -79,42 +79,40 @@ def app():
             conn.close()
 
     # Mostrar tabla de datos
-    query = "SELECT idsalarios, puesto AS PUESTO, zona AS ZONA, salario_base AS SALARIO,salario_base2 AS SALARIO_2,salario_base3 AS SALARIO_3, p_asis AS ASISTENCIA, p_punt AS PUNTUALIDAD, p_dom AS DOMINGO FROM salarios"
+    query = "SELECT idsalarios, puesto AS PUESTO, zona AS ZONA, salario_base AS SALARIO, tipo_evento AS EVENTO, p_asis AS ASISTENCIA, p_punt AS PUNTUALIDAD, p_dom AS DOMINGO FROM salarios"
     data = fetch_data(query)
 
     if data is not None and not data.empty:
         # Crear encabezados manuales
-        cols = st.columns([1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1])  
+        cols = st.columns([1.5, 1.5, 1, 1.5, 1, 1, 1, 1, 1])  
         cols[0].write("Puesto")
         cols[1].write("Zona")
-        cols[2].write("Salario Base Un Evento")
-        cols[3].write("Salario Base Dos Eventos")
-        cols[4].write("Salario Base Tres Eventos")
-        cols[5].write(" % Bono Asistencia")
-        cols[6].write(" % Bono Puntualidad")
-        cols[7].write("Prima Dominical")
-        cols[8].write("Editar")
-        cols[9].write("Eliminar")
+        cols[2].write("Salario Base")
+        cols[3].write("Tipo de Evento")
+        cols[4].write(" % Bono Asistencia")
+        cols[5].write(" % Bono Puntualidad")
+        cols[6].write("Prima Dominical")
+        cols[7].write("Editar")
+        cols[8].write("Eliminar")
 
         # Mostrar datos fila por fila
         for index, row in data.iterrows():
-            cols = st.columns([1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1])
+            cols = st.columns([1.5, 1.5, 1, 1.5, 1, 1, 1, 1, 1])
             cols[0].write(row["PUESTO"])
             cols[1].write(row["ZONA"])
             cols[2].write(row["SALARIO"])
-            cols[3].write(row["SALARIO_2"])
-            cols[4].write(row["SALARIO_3"])
-            cols[5].write(row["ASISTENCIA"])
-            cols[6].write(row["PUNTUALIDAD"])
-            cols[7].write("✅" if row["DOMINGO"] else "❌")  # Mostrar True/False como checkbox visual
+            cols[3].write(row["EVENTO"])
+            cols[4].write(row["ASISTENCIA"])
+            cols[5].write(row["PUNTUALIDAD"])
+            cols[6].write("✅" if row["DOMINGO"] else "❌")  # Mostrar True/False como checkbox visual
 
             # Botón para editar
-            if cols[8].button("✏️", key=f"edit_{row['idsalarios']}"):
+            if cols[7].button("✏️", key=f"edit_{row['idsalarios']}"):
                 st.session_state["edit_id"] = row["idsalarios"]
                 st.session_state["edit_row"] = row
 
             # Botón para eliminar
-            if cols[9].button("❌", key=f"delete_{row['idsalarios']}"):
+            if cols[8].button("❌", key=f"delete_{row['idsalarios']}"):
                 delete_query = "DELETE FROM salarios WHERE idsalarios = %s"
                 if execute_query(delete_query, (row["idsalarios"],)):
                     st.success(f"Registro eliminado exitosamente.")
@@ -128,19 +126,11 @@ def app():
             edit_row = st.session_state["edit_row"]
 
             edit_puesto = st.text_input("Puesto", edit_row["PUESTO"])
-            # Obtener valores únicos para la columna 'ZONA'
-            #if not data.empty:
-            #   zonas_unicas = data["ZONA"].unique().tolist()
-            #else:
-            #    zonas_unicas = ["INTERIOR", "EXTERIOR", "ESPECIAL"]  # Opciones por defecto si no hay datos
-            # Usar selectbox para seleccionar la zona
-            #new_zona = st.selectbox("Zona", zonas_unicas)
             edit_zona = st.text_input("Zona", edit_row["ZONA"])
-            edit_salario = st.number_input("Salario Base Un Evento", min_value=0.0, value=edit_row["SALARIO"], step=0.01)
-            edit_salario2 = st.number_input("Salario Base Dos Eventos", min_value=0.0, value=edit_row["SALARIO_2"], step=0.01)
-            edit_salario3 = st.number_input("Salario Base Tres Eventos", min_value=0.0, value=edit_row["SALARIO_3"], step=0.01)
-            edit_asis = st.number_input(" % Bono de Asistencia", min_value=0.0, value=edit_row["ASISTENCIA"], step=0.0001, format="%.4f")
-            edit_punt = st.number_input(" % Bono de Puntualidad", min_value=0.0, value=edit_row["PUNTUALIDAD"], step=0.0001, format="%.4f")
+            edit_salario = st.number_input("Salario Base", min_value=0.0, value=edit_row["SALARIO"], step=0.01)
+            edit_evento = st.text_input("Tipo Evento", edit_row["EVENTO"])
+            edit_asis = st.number_input(" % Bono de Asistencia", min_value=0.0, value=edit_row["ASISTENCIA"], step=0.01)
+            edit_punt = st.number_input(" % Bono de Puntualidad", min_value=0.0, value=edit_row["PUNTUALIDAD"], step=0.01)
             edit_dom = st.checkbox("Prima Dominical", value=bool(edit_row["DOMINGO"]))
             # Convertir el estado del checkbox a 0.0357 o 0.0 antes de guardarlo
             dom_value = 0.0357 if edit_dom else 0.0
@@ -148,10 +138,10 @@ def app():
             if st.button("Guardar Cambios"):
                 update_query = """
                     UPDATE salarios
-                    SET puesto = %s, zona = %s, salario_base = %s, salario_base2 = %s, salario_base3 = %s, p_asis = %s, p_punt = %s, p_dom = %s
+                    SET puesto = %s, zona = %s, salario_base = %s, tipo_evento = %s, p_asis = %s, p_punt = %s, p_dom = %s
                     WHERE idsalarios = %s
                 """
-                if execute_query(update_query, (edit_puesto, edit_zona, edit_salario, edit_salario2, edit_salario3, edit_asis, edit_punt, dom_value, edit_id)):
+                if execute_query(update_query, (edit_puesto, edit_zona, edit_salario, edit_evento, edit_asis, edit_punt, dom_value, edit_id)):
                     st.success("Registro actualizado exitosamente.")
                     del st.session_state["edit_id"]
                     del st.session_state["edit_row"]
@@ -167,11 +157,10 @@ def app():
         st.info('Rellenar los campos requeridos con Mayúsculas', icon="ℹ️")
         new_puesto = st.text_input("Puesto")
         new_zona = st.text_input("Zona")
-        new_salario = st.number_input("Salario Base Un Evento", min_value=0.0, step=0.001)
-        new_salario2 = st.number_input("Salario Base Dos Eventos", min_value=0.0, step=0.001)
-        new_salario3 = st.number_input("Salario Base Tres Eventos", min_value=0.0, step=0.001)
-        new_asis = st.number_input(" % Bono de Asistencia", min_value=0.0, step=0.0001, format="%.4f")
-        new_punt = st.number_input(" % Bono de Puntualidad", min_value=0.0, step=0.0001, format="%.4f")
+        new_salario = st.number_input("Salario Base", min_value=0.0, step=0.01)
+        new_evento = st.text_input("Evento")
+        new_asis = st.number_input(" % Bono de Asistencia", min_value=0.0, step=0.01)
+        new_punt = st.number_input(" % Bono de Puntualidad", min_value=0.0, step=0.01)
         new_dom = st.checkbox("Prima Dominical", value=False)
         
         #DATOS FIJOS
@@ -182,10 +171,10 @@ def app():
 
         if st.button("Agregar Registro"):
             insert_query = """
-                    INSERT INTO salarios (puesto, zona, salario_base, salario_base2, salario_base3, p_asis, p_punt, aguinaldo, vacaciones, p_vac, p_dom)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO salarios (puesto, zona, salario_base, tipo_evento, p_asis, p_punt, aguinaldo, vacaciones, p_vac, p_dom)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
-            if execute_query(insert_query, (new_puesto, new_zona, new_salario, new_salario2, new_salario3, new_asis, new_punt, new_aguinaldo, new_vacaciones, new_pvac, 0.0357 if new_dom else 0.0)):
+            if execute_query(insert_query, (new_puesto, new_zona, new_salario, new_evento, new_asis, new_punt, new_aguinaldo, new_vacaciones, new_pvac, 0.0357 if new_dom else 0.0)):
                 st.success("Nuevo registro agregado exitosamente.")
             else:
                 st.error("No se pudo agregar el registro.")

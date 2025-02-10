@@ -72,8 +72,8 @@ def app():
         zonas_unicas = data['zona'].unique().tolist()
         puestos_unicos = data['puesto'].unique().tolist()
     else:
-        zonas_unicas = ["Interior", "Exterior", "Especial"]
-        puestos_unicos = ["Demostrador", "Coordinador"]
+        zonas_unicas = ["INTERIOR", "EXTERIOR", "ESPECIAL"]
+        puestos_unicos = ["DEMOSTRADOR", "COORDINADOR"]
 
     #Conexión a Google Sheets
     conn = st.connection("gsheets3", type=GSheetsConnection)

@@ -1,6 +1,8 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
+import io
+
 from estructura.proceso_lector import procesar_datos, to_excel_con_sheets
 
 def app():
@@ -22,23 +24,35 @@ def app():
             st.dataframe(df_empleados)
         
         if st.button("Procesar datos"):
-            df_resultado, df_nomina_uno = procesar_datos(df_empleados, df_ret)
-            
-            # Store the processed DataFrames in session state
-            st.session_state['df_resultado'] = df_resultado
-            st.session_state['df_nomina_uno'] = df_nomina_uno
-            
-            st.success("Datos procesados. Ahora puedes descargar los archivos.")
+            try:
+                df_resultado, df_nomina_uno = procesar_datos(df_empleados, df_ret)
+                st.session_state['df_resultado'] = df_resultado
+                st.session_state['df_nomina_uno'] = df_nomina_uno
+                st.success("Datos procesados. Ahora puedes descargar los archivos.")
+            except Exception as e:
+                st.error(f"Error al procesar datos: {e}")
+                st.stop()
 
-    # Only show download buttons if data has been processed
     if 'df_resultado' in st.session_state and 'df_nomina_uno' in st.session_state:
-        if st.download_button(
-            label="Descargar Nómina Completa",
-            data=to_excel_con_sheets(st.session_state['df_resultado'], st.session_state['df_nomina_uno']),
-            file_name="nomina_completa.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ):
-            st.success("Nómina Completa descargada exitosamente.")
+        try:
+            # Inspecciona los DataFrames
+            st.write("df_resultado:", st.session_state['df_resultado'])
+            st.write("df_nomina_uno:", st.session_state['df_nomina_uno'])
+
+            # Genera el archivo Excel
+            excel_data = to_excel_con_sheets(
+                st.session_state['df_resultado'], 
+                st.session_state['df_nomina_uno']
+            )
+
+            st.download_button(
+                label="Descargar Nómina Completa",
+                data=excel_data,
+                file_name="nomina_completa.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        except Exception as e:
+            st.error(f"Error al generar el archivo Excel: {e}")
 
 if __name__ == "__main__":
     app()
