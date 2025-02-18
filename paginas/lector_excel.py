@@ -25,24 +25,27 @@ def app():
         
         if st.button("Procesar datos"):
             try:
-                df_resultado, df_nomina_uno = procesar_datos(df_empleados, df_ret)
+                df_resultado, df_nomina_uno, df_nomina_dos = procesar_datos(df_empleados, df_ret)
                 st.session_state['df_resultado'] = df_resultado
                 st.session_state['df_nomina_uno'] = df_nomina_uno
+                st.session_state['df_nomina_dos'] = df_nomina_dos
                 st.success("Datos procesados. Ahora puedes descargar los archivos.")
             except Exception as e:
                 st.error(f"Error al procesar datos: {e}")
                 st.stop()
 
-    if 'df_resultado' in st.session_state and 'df_nomina_uno' in st.session_state:
+    if 'df_resultado' in st.session_state and 'df_nomina_uno' in st.session_state and 'df_nomina_dos' in st.session_state:
         try:
             # Inspecciona los DataFrames
             st.write("df_resultado:", st.session_state['df_resultado'])
             st.write("df_nomina_uno:", st.session_state['df_nomina_uno'])
+            st.write("df_nomina_dos:", st.session_state['df_nomina_dos'])
 
             # Genera el archivo Excel
             excel_data = to_excel_con_sheets(
                 st.session_state['df_resultado'], 
-                st.session_state['df_nomina_uno']
+                st.session_state['df_nomina_uno'],
+                st.session_state['df_nomina_dos']
             )
 
             st.download_button(

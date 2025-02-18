@@ -115,6 +115,7 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
 def procesar_datos(df_empleados, df_ret):
     nuevos_registros = []
     nomina_uno_data = []
+    nomina_dos_data = []
 
     for _, row in df_empleados.iterrows():
         puesto = row['PUESTO']
@@ -260,8 +261,7 @@ def procesar_datos(df_empleados, df_ret):
             "BODEGA": bodega,
             "EVENTO": evento,
             "NOMBRE": nombre_completo,
-            "FECHA ALTA": " ",
-            "FECHA BAJA": " ",
+            "PERIODO": periodo,
             "SEMANA NOI": " ",
             "DIAS FINIQ": dias_finiquito + dias_finiquito2 + dias_finiquito3,
             "DIAS": total_dias + total_dias_t2 + total_dias_t3,
@@ -299,20 +299,35 @@ def procesar_datos(df_empleados, df_ret):
             "COMENTARIOS": " ",
         }
         nomina_uno_data.append(nomina_uno_registro)
+
+        nomina_dos_registro = {
+            "BODEGA": bodega,
+            "EVENTO": evento,
+            "PERIODO TRABAJADO": periodo,
+            "NOMBRE COMPLETO": nombre_completo,
+            "NOMINA": total,
+            "FINIQUITO": round(((fini1*dias_finiquito) + (fini2*dias_finiquito2) + (fini3*dias_finiquito3)),2),
+            "PRESTAMO": prestamo,
+            "EFECTIVO": efectivo,
+            "NETO A PAGAR": total - deducciones,
+        }
+        nomina_dos_data.append(nomina_dos_registro)
     
     # Crear DataFrame con los nuevos registros
     df_resultado = pd.DataFrame(nuevos_registros)
     df_nomina_uno = pd.DataFrame(nomina_uno_data)
+    df_nomina_dos = pd.DataFrame(nomina_dos_data)
 
-    return df_resultado, df_nomina_uno
+    return df_resultado, df_nomina_uno, df_nomina_dos
     
 # Generar archivo Excel para descargar
-def to_excel_con_sheets(df1, df2):
-    if not isinstance(df1, pd.DataFrame) or not isinstance(df2, pd.DataFrame):
+def to_excel_con_sheets(df1, df2, df3):
+    if not isinstance(df1, pd.DataFrame) or not isinstance(df2, pd.DataFrame) or not isinstance(df3, pd.DataFrame):
         raise ValueError("Se esperaban objetos DataFrame, pero se recibió un tipo incorrecto.")
     
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df1.to_excel(writer, index=False, sheet_name='Nuevo Registro')
         df2.to_excel(writer, index=False, sheet_name='Nómina Uno')
+        df3.to_excel(writer, index=False, sheet_name='Nómina Dos')
     return output.getvalue()

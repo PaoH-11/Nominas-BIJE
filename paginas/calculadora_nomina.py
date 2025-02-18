@@ -82,6 +82,7 @@ def app():
     df_aux2 = conn.read(worksheet="Nómina General", usecols=list(range(40)), ttl=5).dropna(how="all")
     df_aux3 = conn.read(worksheet="Nómina Doble Turno", usecols=list(range(40)), ttl=5).dropna(how="all")
     df_ret = conn.read(worksheet="Retención", usecols=[0, 1], ttl=5).dropna(how="all")
+    
     #Obtener listas de nombres, eventos, bodegas, puestos y salarios
     NOMBRES = df_aux.iloc[:, 0].dropna().tolist()
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
@@ -102,6 +103,7 @@ def app():
     else:
         st.error("El DataFrame 'Retención' no tiene suficientes columnas.")
         st.stop()
+    
     #Formulario para ingresar los datos del empleado
     with st.form(key="empleado_form"):        
         c1, c2, c3 = st.columns(3)
@@ -347,7 +349,7 @@ def app():
                             "NÓMINA": total,
                             "FINIQUITO": round(((fini*dias_finiquito) + (fini2*dias_finiquito2) + (fini3*dias_finiquito3)),2),
                             "EFECTIVO": efectivo,    
-                            "BONOS": bono,  
+                            "INFONAVIT": infonavit,  
                             "NETO A PAGAR": total - deducciones,                                                       
                         }
                     ]
@@ -358,6 +360,7 @@ def app():
             conn.update(worksheet="Nómina Doble Turno", data=updated_df)
 
             st.success(f"Datos de {nombre_empleado} registrados correctamente.")
+            
     with st.expander("Nóminas"):    
         st.dataframe(df)
 
