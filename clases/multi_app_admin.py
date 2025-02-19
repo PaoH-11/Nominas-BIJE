@@ -82,6 +82,65 @@ class MultiApp:
                 st.rerun()
 
         logout()
+        
+    #Usuarios    
+    def run_user():
+        st.set_page_config(
+            page_title="MAVEN",
+            page_icon="🗃",
+            layout="wide",
+            initial_sidebar_state="expanded",
+        )
+        st.sidebar.image("data/logo_maven_azul_s.png")
+
+        if 'username' in st.session_state:
+            st.sidebar.markdown(
+                f"""
+                <div style='text-align: center; font-weight: bold; font-size: 24px;'>
+                    Bienvenido, {st.session_state.username}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with st.sidebar:
+            
+            app = option_menu(
+                menu_title=False,
+                options=["Nómina GoogleSheet","Nómina Temporal"],
+                icons=["calculator", "calculator"],
+                menu_icon="heart-eyes-fill",
+                default_index=0,
+                styles={
+                    "container": {"background-color": "#bcbcbc"},
+                    "icon": {"color": "white", "font-size": "23px"},
+                    "nav-link": {"color": "white", "font-size": "17px", "text-align": "left", "margin": "0px"},
+                    "nav-link-selected": {"background-color": "#475570"},
+                }
+            )
+
+        # Módulos de aplicaciones
+        app_modules = {
+            'Nómina GoogleSheet': 'paginas.calculadora_nomina',
+            'Nómina Temporal': 'paginas.excel_temporal', 
+        }
+        if app in app_modules:
+            module = importlib.import_module(app_modules[app])
+            module.app()  # Llamar a la función app() del módulo
+
+        def logout():
+            st.sidebar.markdown("""
+            [![Logout](https://img.icons8.com/ios-filled/20/000000/logout-rounded.png)](#)
+            """, unsafe_allow_html=True)
+
+            if st.sidebar.button("Cerrar Sesión"):
+                st.session_state.logged_in = False
+                st.session_state.username = ""
+                st.session_state.rol = ""
+                st.rerun()
+
+        logout()
+
 
 
 def verify_credentials(username, password):
@@ -134,7 +193,9 @@ def main():
     if st.session_state.logged_in:
         if st.session_state.rol == "Admin":
             MultiApp.run_admin()
-        else:
+        if st.session_state.rol == "User":
+            MultiApp.run_user()  
+        else:    
             st.error("No tienes permisos para acceder.")
     else:
         login_page()
