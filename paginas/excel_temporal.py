@@ -242,7 +242,7 @@ def app():
             alta_seguro = st.selectbox("Alta del seguro social", options=SEGURO)
             st.write("Segundo evento")
             total_dias_t2 = st.number_input(label="Días trabajados con doble evento", min_value=0, max_value=21, key="total_dias_2")
-            dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")   
+            dias_finiquito2 = st.number_input(label="Días Finiquito 2 Turnos", min_value=0, max_value=21, key="dias_finiquito_2")   
             efectivo = st.number_input(label="Efectivo", min_value=0, key="efectivo")   
                       
         with c3:
@@ -252,7 +252,7 @@ def app():
             horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0, key="horas_extra")  
             st.write("Tercer evento")
             total_dias_t3 = st.number_input(label="Días trabajados con tres eventos", min_value=0, max_value=21, key="total_dias_3")
-            dias_finiquito3 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_3") 
+            dias_finiquito3 = st.number_input(label="Días Finiquito 3 Turnos", min_value=0, max_value=21, key="dias_finiquito_3") 
             bono = st.number_input(label="Bono", min_value=0, key="bono")   
         st.subheader("Deducciones")
         

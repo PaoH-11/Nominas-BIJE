@@ -64,7 +64,7 @@ class MultiApp:
             'Nómina GoogleSheet': 'paginas.calculadora_nomina',
             'Nómina Temporal': 'paginas.excel_temporal',
             'Excel': 'paginas.lector_excel',
-            'Salarios': 'paginas.asignacion_sueldos',  
+            'Salarios': 'paginas.asignacion_sueldos', 
         }
         if app in app_modules:
             module = importlib.import_module(app_modules[app])

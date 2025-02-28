@@ -36,7 +36,7 @@ def fetch_data(query, params=None):
     finally:
         conn.close()
 
-# Función para calcular el finiquito
+# Función para calcular el nomina
 def calcular_finiquito(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_dominical):
     aguinaldo = round((salario_base * (15 / 365)), 2)
     vacaciones = round((salario_base * (12 / 365)), 2)
@@ -180,9 +180,9 @@ def procesar_datos(df_empleados, df_ret):
         total_tres = round(sueldo_cotizacion3 * total_dias_t3, 2) if dias_finiquito3 == 0 else round(sueldo_cotizacion3 * total_dias_t3 + (fini3 * dias_finiquito3), 2)
 
         if dia_festivo >= 1:
-            total_uno += dia_festivo * 2
+            total_fes = salario_base * 2
         
-        base_isr = round((salario_base + prem_asis + prem_punt) * total_dias + ((he / 2) + dia_festivo + bono + (vacaciones * dias_finiquito)),2) 
+        base_isr = round((salario_base + prem_asis + prem_punt) * total_dias + ((he / 2) + total_fes + bono + (vacaciones * dias_finiquito)),2) 
         total = round(total_uno + total_dos + total_tres + he, 2)
         retencion_dias = round((retencion/7) * total_dias, 2)
         isr_calculado = calcular_isr(base_isr)   
@@ -274,7 +274,7 @@ def procesar_datos(df_empleados, df_ret):
             "HRS EXT": he,
             "TIME EXT DOBLE": " ",
             "PRIMA DOM IMPORTE": prima_dominical1 * total_dias,
-            "DIA FESTIVO": dia_festivo,
+            "DIA FESTIVO": total_fes,
             "BONO": bono,
             "AGUI DIAS": "15",
             "AGUI IMPORTE": aguinaldo * dias_finiquito,

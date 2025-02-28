@@ -71,9 +71,11 @@ def app():
     if not data.empty:
         zonas_unicas = data['zona'].unique().tolist()
         puestos_unicos = data['puesto'].unique().tolist()
+        salarios_unicos = data['salario_base'].unique().tolist()
     else:
         zonas_unicas = ["INTERIOR", "EXTERIOR", "ESPECIAL"]
         puestos_unicos = ["DEMOSTRADOR", "COORDINADOR"]
+        salarios_unicos = ["NO HAY SALARIOS"]
 
     #Conexión a Google Sheets
     conn = st.connection("gsheets3", type=GSheetsConnection)
@@ -88,11 +90,12 @@ def app():
     EVENTOS = df_aux.iloc[:, 1].dropna().tolist()
     BODEGA = df_aux.iloc[:, 2].dropna().tolist()
     PUESTO = puestos_unicos
-    SALARIOS = df_aux.iloc[:, 4].dropna().tolist() 
+    #SALARIOS = df_aux.iloc[:, 4].dropna().tolist()
+    SALARIOS = salarios_unicos  
     ZONA = zonas_unicas
     HORARIO = ["9 A 4", "2 A 9", "COORDINACIÓN"]
     SEGURO = ["FINIQUITO", "NOMINA", "CORTE"]
-    NOMINA = ["FINIQUITO", "CORTE"]
+    NOMINA = ["FINIQUITO", "CORTE","PRUEBA"]
     column_names = list(df_ret.columns)
     SALARIO_BASE_COL = column_names[0]  
     RETENCION_COL = column_names[1]
@@ -114,7 +117,7 @@ def app():
             estatus_nomina = st.selectbox("Estatus de la nómina", options=NOMINA)
             st.write("Primer evento")
             total_dias = st.number_input(label="Total de días trabajados*", min_value=1, max_value=21, key="total_dias_1")
-            dias_finiquito = st.number_input(label="Días Finiquito 1 Turno", min_value=0, max_value=21, key="dias_finiquito_1")
+            dias_finiquito = st.number_input(label="Días Finiquito 1 Turno", min_value=0, max_value=35, key="dias_finiquito_1")
             dia_festivos_c = st.checkbox(label="Día festivo")
             dia_festivos = st.selectbox(label="Día festivo", options=SALARIOS) 
         with c2:
@@ -124,7 +127,7 @@ def app():
             alta_seguro = st.selectbox("Alta del seguro social", options=SEGURO)
             st.write("Segundo evento")
             total_dias_t2 = st.number_input(label="Días trabajados con doble evento", min_value=0, max_value=21, key="total_dias_2")
-            dias_finiquito2 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_2")     
+            dias_finiquito2 = st.number_input(label="Días Finiquito 2 Turnos", min_value=0, max_value=21, key="dias_finiquito_2")     
             efectivo = st.number_input(label="Efectivo", min_value=0, key="efectivo")           
         with c3:
             zona = st.selectbox("Zona*", ZONA)
@@ -133,7 +136,7 @@ def app():
             horas_extra = st.number_input(label="Horas extra", max_value=8, min_value=0, key="horas_extra")  
             st.write("Tercer evento")
             total_dias_t3 = st.number_input(label="Días trabajados con tres eventos", min_value=0, max_value=21, key="total_dias_3")
-            dias_finiquito3 = st.number_input(label="Días Finiquito", min_value=0, max_value=21, key="dias_finiquito_3") 
+            dias_finiquito3 = st.number_input(label="Días Finiquito 3 Turnos", min_value=0, max_value=21, key="dias_finiquito_3") 
             bono = st.number_input(label="Bono", min_value=0, key="bono")   
         st.subheader("Deducciones")
         
