@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import mysql.connector
 import pandas as pd
 import io
@@ -113,6 +114,15 @@ def obtener_salario_y_premio(puesto, zona, total_dias_t2):
     return 0, 0, 0, 0, 0, 0, 0, False, False, False
 
 def procesar_datos(df_empleados, df_ret):
+    conn = st.connection("gsheets3", type=GSheetsConnection)
+    df_ret = conn.read(worksheet="Retención", usecols=[0, 1], ttl=5).dropna(how="all")
+    
+    #Conexion a tablas googlesheets
+    df = conn.read(worksheet="Nómina", usecols=list(range(60)), ttl=5).dropna(how="all")
+    df_aux2 = conn.read(worksheet="Nómina General", usecols=list(range(40)), ttl=5).dropna(how="all")
+    df_aux3 = conn.read(worksheet="Nómina Doble Turno", usecols=list(range(40)), ttl=5).dropna(how="all")
+   
+
     nuevos_registros = []
     nomina_uno_data = []
     nomina_dos_data = []
@@ -121,6 +131,7 @@ def procesar_datos(df_empleados, df_ret):
         puesto = row['PUESTO']
         zona = row['ZONA']
         nombre_completo = row['NOMBRE COMPLETO']
+        estatus = row['ESTATUS DE NÓMINA']
         bodega = row['BODEGA']
         evento = row['EVENTO']
         horario = row['HORARIO']
@@ -192,9 +203,13 @@ def procesar_datos(df_empleados, df_ret):
             "PUESTO": puesto,
             "ZONA": zona,
             "NOMBRE COMPLETO": nombre_completo,
+            "STATUS DE NOMINA": estatus,
+            "ALTA DEL SEGURO SOCIAL": estatus,
             "BODEGA": bodega,
             "EVENTO": evento,
             "HORARIO": horario,
+            "DÍAS FESTIVOS": total_fes,
+            "BONO": bono,
             "PERIODO": periodo,
             "TOTAL DE DIAS UN EVENTO": total_dias,
             "TOTAL DÍAS DOS EVENTOS": total_dias_t2,
@@ -243,19 +258,18 @@ def procesar_datos(df_empleados, df_ret):
             
             "SUELDO POR COBRAR TRES EVENTOS": total_tres,
             
-            "TOTAL DE LA NOMINA SIN DEDUCCIONES": total,
+            "TOTAL DE LA NOMINA": total,
             "EFECTIVO": efectivo,
             "BASE ISR": base_isr,
             "ISR": isr_calculado,
             "INFONAVIT": infonavit,
             "PRESTAMO": prestamo,
             "IMSS": retencion_dias,
-            "TOTAL NETO A PAGAR": total - deducciones,
+            "TOTAL A PAGAR": total - deducciones,
 
             "OBSERVACIONES": observaciones,
         }
         nuevos_registros.append(nuevo_registro)
-
         
         nomina_uno_registro = {
             "BODEGA": bodega,
@@ -290,10 +304,10 @@ def procesar_datos(df_empleados, df_ret):
             "CREDITO INFONAVIT": infonavit,
             "DEDUCCIÓN TOTAL": deducciones,
             "NOMINA NETA": total - deducciones,
-            "NOMINA": " ",
             "FINIQUITO": total - deducciones,
             "EFECTIVO": efectivo,
             "NETO A PAGAR": total - deducciones,
+            "TOTAL SIN DEDUCCIONES": total,
             "STATUS": " ",
             "DIFERENCIA": " ",
             "COMENTARIOS": " ",
@@ -305,18 +319,27 @@ def procesar_datos(df_empleados, df_ret):
             "EVENTO": evento,
             "PERIODO TRABAJADO": periodo,
             "NOMBRE COMPLETO": nombre_completo,
-            "NOMINA": total,
+            "NÓMINA": total,
             "FINIQUITO": round(((fini1*dias_finiquito) + (fini2*dias_finiquito2) + (fini3*dias_finiquito3)),2),
             "PRESTAMO": prestamo,
-            "EFECTIVO": efectivo,
+            "EFECTIVO": efectivo,  
+            "INFONAVIT": infonavit, 
             "NETO A PAGAR": total - deducciones,
         }
         nomina_dos_data.append(nomina_dos_registro)
     
-    # Crear DataFrame con los nuevos registros
+    # Crear DataFrame y Enviarlos a GoogleSheets con los nuevos registros
     df_resultado = pd.DataFrame(nuevos_registros)
+    updated_df = pd.concat([df, df_resultado], ignore_index=True)
+    conn.update(worksheet="Nómina", data=updated_df)
+
     df_nomina_uno = pd.DataFrame(nomina_uno_data)
+    updated_df = pd.concat([df_aux2, df_nomina_uno], ignore_index=True)
+    conn.update(worksheet="Nómina General", data=updated_df)
+
     df_nomina_dos = pd.DataFrame(nomina_dos_data)
+    updated_df = pd.concat([df_aux3, df_nomina_dos], ignore_index=True)
+    conn.update(worksheet="Nómina Doble Turno", data=updated_df)
 
     return df_resultado, df_nomina_uno, df_nomina_dos
     
