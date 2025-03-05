@@ -47,8 +47,8 @@ class MultiApp:
             
             app = option_menu(
                 menu_title=False,
-                options=["Nómina GoogleSheet","Nómina Temporal","Excel", "Salarios"],
-                icons=["calculator", "calculator", "calculator", "calculator"],
+                options=["Nómina GoogleSheet","Nómina Temporal","Excel", "Salarios", "Cargador IRS"],
+                icons=["calculator", "calculator", "calculator", "calculator", "calculator"],
                 menu_icon="heart-eyes-fill",
                 default_index=0,
                 styles={
@@ -64,7 +64,8 @@ class MultiApp:
             'Nómina GoogleSheet': 'paginas.calculadora_nomina',
             'Nómina Temporal': 'paginas.excel_temporal',
             'Excel': 'paginas.lector_excel',
-            'Salarios': 'paginas.asignacion_sueldos', 
+            'Salarios': 'paginas.asignacion_sueldos',
+            'Cargador IRS': 'paginas.cargador_tb_isr',
         }
         if app in app_modules:
             module = importlib.import_module(app_modules[app])

@@ -3,6 +3,7 @@ import pandas as pd
 import mysql.connector
 import io
 from data.datos import SALARIO_BASE, tarifas_isr
+from paginas.cargador_tb_isr import cargar_datos_desde_bd
 
 # Función para conectar a la base de datos
 def connect_to_database():
@@ -54,11 +55,33 @@ def calcular_nomina(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima_do
     return aguinaldo, vacaciones, prima_vacacional, prima_dominical, prem_asis, prem_punt, sueldo_integrado, fini
 
 # Función para obtener el salario base y el porcentaje de la prima vacacional según el puesto y la zona
-def calcular_isr(base_isr):
+"""def calcular_isr(base_isr):
     for tarifa in tarifas_isr:
         if tarifa["limite_inferior"] <= base_isr <= tarifa["limite_superior"]:
             isr = tarifa["cuota_fija"] + (base_isr - tarifa["limite_inferior"]) * tarifa["porcentaje"]
             return round(isr, 2)        
+    return 0.0"""
+
+def calcular_isr(base_isr):
+    # Obtener las tarifas desde la base de datos (como un DataFrame)
+    df_tarifas_isr = cargar_datos_desde_bd()  #  esta función devuelve un DataFrame de lo que se eingresa en el cargador
+
+    # Iterar sobre las filas del DataFrame
+    #iterar : recorrer un conjunto de elementos uno por uno para realizar alguna acción sobre cada uno de esos elementos.
+    for index, tarifa in df_tarifas_isr.iterrows():
+        limite_inferior = tarifa["limite_inferior"]
+        limite_superior = tarifa["limite_superior"]
+        
+        # Verificar si la base_isr está dentro del rango
+        if limite_inferior <= base_isr <= limite_superior:
+            cuota_fija = tarifa["cuota_fija"]
+            porcentaje = tarifa["porcentaje"]
+            
+            # Calcular el ISR (dependiendo de tu fórmula)
+            isr_calculado = cuota_fija + (base_isr - limite_inferior) * porcentaje
+            return round(isr_calculado, 2)  # Retornar el ISR calculado
+
+    # Si no se encuentra ningún rango, retornar 0
     return 0.0
 
 # Función para obtener el salario base y premios según el puesto y la zona
