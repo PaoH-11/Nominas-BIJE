@@ -44,7 +44,7 @@ def calcular_finiquito(salario_base, prem_punt_pct, prem_asis_pct, incluir_prima
     aguinaldo = salario_base * (15 / 365)
     vacaciones = salario_base * (12 / 365)
     prima_vacacional = vacaciones * 0.25
-    prima_dominical = round(((1 * 0.25) / 7) * salario_base, 2) if incluir_prima_dominical else 0
+    prima_dominical = ((1 * 0.25) / 7) * salario_base if incluir_prima_dominical else 0
     prem_asis = salario_base * prem_punt_pct
     prem_punt = salario_base * prem_asis_pct
     sueldo_integrado = round(salario_base + aguinaldo + vacaciones + prima_vacacional + prima_dominical, 2)   
