@@ -285,7 +285,7 @@ def procesar_datos(df_empleados, df_ret):
         # Cálculo de IMSS para los tres eventos
         # Evento 1
         #excen1 = (salario_base - tope_uma) * excedente * total_dias if salario_base > tope_uma else 0
-        excen1 = ((sdi > tope_uma) * ((sdi - tope_uma) * excedente * total_dias))
+        excen1 = ((sdi > tope_uma) * ((sdi - tope_uma) * (excedente/100) * total_dias))
         prest_din1 = int(sdi * total_dias * (prest_dinero / 100) * 100) /100
         prest_esp1 = int (sdi * total_dias * (prest_especie/ 100)*100) /100
         inv_vida1 = int(sdi * total_dias * (invy_vida / 100)*100)/100
