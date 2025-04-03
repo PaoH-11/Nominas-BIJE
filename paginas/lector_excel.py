@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import io
+import traceback
 
 from estructura.proceso_lector import procesar_datos, to_excel_con_sheets
 
@@ -23,7 +24,7 @@ def app():
         with st.expander("Nóminas"): 
             st.dataframe(df_empleados)
         
-        if st.button("Procesar datos"):
+        """if st.button("Procesar datos"):
             try:
                 df_resultado, df_nomina_uno, df_nomina_dos = procesar_datos(df_empleados, df_ret)
                 st.session_state['df_resultado'] = df_resultado
@@ -32,6 +33,19 @@ def app():
                 st.success("Datos procesados. Ahora puedes descargar los archivos.")
             except Exception as e:
                 st.error(f"Error al procesar datos: {e}")
+                st.stop()"""
+        
+        if st.button("Procesar datos"):
+            try:
+                df_resultado, df_nomina_uno, df_nomina_dos = procesar_datos(df_empleados, df_ret)
+                st.session_state['df_resultado'] = df_resultado
+                st.session_state['df_nomina_uno'] = df_nomina_uno
+                st.session_state['df_nomina_dos'] = df_nomina_dos
+                st.success("Datos procesados. Ahora puedes descargar los archivos.")
+            except Exception as e:
+                st.error(f"⚠️ Error al procesar datos: {e}")
+                st.text("🔍 Detalle del error:")
+                st.text(traceback.format_exc())  # 📌 Muestra la línea exacta del error en el código
                 st.stop()
 
     if 'df_resultado' in st.session_state and 'df_nomina_uno' in st.session_state and 'df_nomina_dos' in st.session_state:
