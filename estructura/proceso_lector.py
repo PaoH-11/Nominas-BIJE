@@ -3,7 +3,7 @@ from streamlit_gsheets import GSheetsConnection
 import mysql.connector
 import pandas as pd
 import io
-from data.datos import SALARIO_BASE, tarifas_isr
+#from data.datos import SALARIO_BASE, tarifas_isr
 from paginas.cargador_tb_isr import cargar_datos_desde_bd
 
 
@@ -137,7 +137,7 @@ def calcular_retencion(sdi, df_ret):
     for index, row in df_ret.iterrows():
         if sdi <= row[SALARIO_BASE_COL]:
             return row[RETENCION_COL]
-
+    return 0
 
 
 
