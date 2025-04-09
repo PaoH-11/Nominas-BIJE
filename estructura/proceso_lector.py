@@ -313,8 +313,7 @@ def procesar_datos(df_empleados, df_ret):
         aguinaldo_final = aguinaldo * dias_finiquito
 
         deducciones = isr_calculado + ret_imss1+ infonavit + prestamo + retencion_dias
-        deduccion_total = isr_subsidio +ret_imss1 + infonavit + prestamo 
-
+        
         #percepcion total
         percepcion_total = sueldo + prem_asistencia + prem_puntualidad + prima_dominical + prima_vacacional_final + total_fes + bono + aguinaldo_final + vacas  + prestamo + he
         
@@ -325,6 +324,9 @@ def procesar_datos(df_empleados, df_ret):
         else:
             sub_dia_aplicado= 0
             isr_subsidio = isr_calculado
+
+        deduccion_total = isr_subsidio +ret_imss1 + infonavit + prestamo 
+
 
         #ESTATUS DE NOMINAS
         nom_finiquito = 0  # Inicializar la variable
