@@ -225,7 +225,7 @@ def procesar_datos(df_empleados, df_ret):
         total_dias_t2 = row.get('TOTAL DE DIAS TRABAJADOS DOS EVENTOS', 0)
         total_dias_t3 = row.get('TOTAL DE DIAS TRABAJADOS TRES EVENTOS', 0)
         dias_finiquito = row.get('TOTAL DE DIAS FINIQUITO', 0)
-        subsidio_diario_op = row['APLICAR SUBSIDO DIARIO']
+        dias_finiquito2 = row.get('TOTAL DE DIAS FINIQUITO DOS EVENTOS', 0)
         dias_finiquito3 = row.get('TOTAL DE DIAS FINIQUITO TRES EVENTOS', 0)
         horas_extra = row.get('TOTAL DE HORAS EXTRAS', 0)
         dia_festivo = row.get('DÍA FESTIVO', 0)
@@ -292,16 +292,6 @@ def procesar_datos(df_empleados, df_ret):
         ces_vjz1 = int (sdi * total_dias * (cesa_vejz /100)*100)/100
         ret_imss1 = int ((excen1 + prest_din1 + prest_esp1 + inv_vida1 + ces_vjz1) *100) /100
 
-        #subsidio al empleo para contuniar con las operaciones 
-        if subsidio_diario_op == "SI":
-            sub_dia_isr =subsidio_diario * total_dias
-            isr_subsidio= isr_calculado - sub_dia_isr
-
-        else:
-            sub_dia_isr= 0
-            isr_subsidio = isr_calculado
-
-        
         #sueldo
         sueldo = salario_base * total_dias
         
@@ -328,7 +318,15 @@ def procesar_datos(df_empleados, df_ret):
         #percepcion total
         percepcion_total = sueldo + prem_asistencia + prem_puntualidad + prima_dominical + prima_vacacional_final + total_fes + bono + aguinaldo_final + vacas  + prestamo + he
         
+        if (percepcion_total/total_dias ) * (365/12) < tope_isubsidio:
+            sub_dia_aplicado =subsidio_diario * total_dias
+            isr_subsidio= isr_calculado - sub_dia_aplicado
 
+        else:
+            sub_dia_aplicado= 0
+            isr_subsidio = isr_calculado
+
+        #ESTATUS DE NOMINAS
         nom_finiquito = 0  # Inicializar la variable
 
         if estatus == "CORTE":
@@ -381,6 +379,7 @@ def procesar_datos(df_empleados, df_ret):
             "ISR DETERMINADO": isr_calculado, #isr sin subsidio al empleo
             "ISR A PAGAR":  isr_subsidio,
             "ISR (SUBSIDIO)": isr_subsidio, #isr a subsidio
+            "SUBSIDIO APLICADO": sub_dia_aplicado,
             "INFONAVIT": infonavit,
             "PRESTAMO": prestamo,
             "IMSS": ret_imss1,
